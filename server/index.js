@@ -3,7 +3,9 @@ const i_worker = require('./worker');
 const i_ws = require('./websocket');
 const i_api = require('./api');
 
-const server = i_utils.WebServer.create({ api: i_api });
+const server = i_utils.WebServer.create(
+   { api: i_api, }, { httpsDir: process.env.BOGA_HTTPS }
+);
 
 i_worker.cronCleanAuthToken();
 i_ws.init(server, '/ws');

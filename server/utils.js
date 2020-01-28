@@ -6,11 +6,27 @@ const i_auth = require('./auth');
 const i_env = require('./env');
 
 const WebServer = {
-   create: (router) => {
+   create: (router, options) => {
+      if (!options) options = {};
+      let server = null;
       router = Object.assign(router, WebServer.router_base);
-      return server = i_http.createServer((req, res) => {
-         WebServer.route(req, res, router);
-      });
+      if (options.httpsDir) {
+         const i_https = require('https');
+         // openssl req -newkey rsa:2048 -new -nodes -x509 -days 365 -keyout ca.key -out ca.crt
+         // BOGA_HTTPS=./
+         const https_config = {
+            key: i_fs.readFileSync(i_path.join(options.httpsDir, 'ca.key')),
+            cert: i_fs.readFileSync(i_path.join(options.httpsDir, 'ca.crt')),
+         };
+         server = i_https.createServer(https_config, (req, res) => {
+            WebServer.route(req, res, router);
+         });
+      } else {
+         server = i_http.createServer((req, res) => {
+            WebServer.route(req, res, router);
+         });
+      }
+      return server;
    },
    route: (req, res, router) => {
       let r = i_url.parse(req.url);
