@@ -14,95 +14,7 @@ var _event = {
    }
 };
 
-function EdienilnoPseudoId(N) {
-   var random = ~~(Math.random() * N)
-   var timestamp = ~~(new Date().getTime());
-   return (timestamp + '-') + random;
-}
-
-function EdienilnoSideItem(url, title, desc) {
-   var a = document.createElement('a');
-   var d1 = document.createElement('div');
-   var d2 = document.createElement('div');
-   a.classList.add('boga-side-item');
-   d1.style.fontSize = '20px';
-   d1.style.textOverflow = 'ellipsis';
-   d1.style.whiteSpace = 'nowrap';
-   d1.style.overflow = 'hidden';
-   d2.style.textOverflow = 'ellipsis';
-   d2.style.whiteSpace = 'nowrap';
-   d2.style.overflow = 'hidden';
-   if (title) {
-      d1.appendChild(document.createTextNode(title));
-      a.appendChild(d1);
-   }
-   if (desc) {
-      d2.appendChild(document.createTextNode(desc));
-      a.appendChild(d2);
-   }
-   if (url) a.href = url;
-   this.dom = {
-      self: a,
-      title: d1,
-      desc: d2,
-      img: document.createElement('img')
-   };
-}
-EdienilnoSideItem.prototype = {
-   setTitle: function (title) {
-      this.dom.title.innerHTML = '';
-      this.dom.title.appendChild(document.createTextNode(title));
-   },
-   setDescription: function (desc) {
-      this.dom.desc.innerHTML = '';
-      this.dom.desc.appendChild(document.createTextNode(desc));
-   }
-};
-
-function EdienilnoScrollableView(container) {
-   var div = document.createElement('div');
-   var view = document.createElement('div');
-   this.dom = {
-      container: container,
-      self: div,
-      view: view
-   };
-   div.appendChild(view);
-   container.appendChild(div);
-   this.hide();
-   this.resize();
-}
-EdienilnoScrollableView.prototype = {
-   resize: function () {
-      this.dom.self.style.width = this.dom.container.offsetWidth + 'px';
-      this.dom.self.style.height = this.dom.container.offsetHeight + 'px';
-   },
-   scrollableX: function () {
-      this.dom.self.style.overflowX = 'auto';
-   },
-   unscrollableX: function () {
-      this.dom.self.style.overflowX = 'hidden';
-   },
-   scrollableY: function () {
-      this.dom.self.style.overflowY = 'auto';
-   },
-   unscrollableY: function () {
-      this.dom.self.style.overflowY = 'hidden';
-   },
-   isVisible: function () {
-      return this.displayed;
-   },
-   show: function () {
-      this.dom.self.style.display = 'block';
-      this.displayed = true;
-   },
-   hide: function () {
-      this.dom.self.style.display = 'none';
-      this.displayed = false;
-   }
-};
-
-function EdienilnoDropdownView(stick_to) {
+function BogaDropdownView(stick_to) {
    var div = document.createElement('div');
    this.dom = {
       self: div,
@@ -132,7 +44,7 @@ function EdienilnoDropdownView(stick_to) {
    document.body.appendChild(div);
    this.hide();
 }
-EdienilnoDropdownView.prototype = {
+BogaDropdownView.prototype = {
    dispose: function () {
       if (this.dom.mask) this.hide();
       if (this.dom.self.parentNode) {
@@ -195,11 +107,11 @@ EdienilnoDropdownView.prototype = {
    }
 };
 
-function EdienilnoInputBox(options) {
+function BogaInputBox(options) {
    if (!options) options = {};
 
    this.dom = {
-      self: new EdienilnoDropdownView(document.body),
+      self: new BogaDropdownView(document.body),
       title: document.createElement('div'),
       body: document.createElement('div'),
       input: document.createElement('input'),
@@ -255,7 +167,7 @@ function EdienilnoInputBox(options) {
    container.style.border = '1px solid black';
    container.style.padding = '5px';
 }
-EdienilnoInputBox.prototype = {
+BogaInputBox.prototype = {
    dispose: function () {
       this.dom.btn.ok.removeEventListener('click', this.event.okFn);
       this.event.cacnelFn && this.dom.btn.cancel.removeEventListener('click', this.event.cancelFn);
@@ -284,11 +196,11 @@ EdienilnoInputBox.prototype = {
    }
 };
 
-function EdienilnoYesNoCancelBox(options) {
+function BogaYesNoCancelBox(options) {
    if (!options) options = {};
 
    this.dom = {
-      self: new EdienilnoDropdownView(document.body),
+      self: new BogaDropdownView(document.body),
       title: document.createElement('div'),
       body: document.createElement('div'),
       btn: {
@@ -348,7 +260,7 @@ function EdienilnoYesNoCancelBox(options) {
    container.style.border = '1px solid black';
    container.style.padding = '5px';
 }
-EdienilnoYesNoCancelBox.prototype = {
+BogaYesNoCancelBox.prototype = {
    dispose: function () {
       this.dom.btn.yes.removeEventListener('click', this.event.yesFn);
       this.event.noFn && this.dom.btn.no.removeEventListener('click', this.event.noFn);
@@ -372,11 +284,8 @@ EdienilnoYesNoCancelBox.prototype = {
 };
 
 if (!window.boga) window.boga = {};
-window.boga.pseudoId = EdienilnoPseudoId;
-window.boga.SideItem = EdienilnoSideItem;
-window.boga.ScrollableView = EdienilnoScrollableView;
-window.boga.DropdownView = EdienilnoDropdownView;
-window.boga.InputBox = EdienilnoInputBox;
-window.boga.YesNoCancelBox = EdienilnoYesNoCancelBox;
+window.boga.DropdownView = BogaDropdownView;
+window.boga.InputBox = BogaInputBox;
+window.boga.YesNoCancelBox = BogaYesNoCancelBox;
 
 })();

@@ -19,7 +19,7 @@ function bogaWsClientOffline(client, fn_list) {
    });
 }
 
-function EdienilnoWsClient(url) {
+function BogaWsClient(url, room) {
    if (url.indexOf('://') < 0) {
       url = (location.protocol === 'http:'?'ws://':'wss://') + location.host + url;
    }
@@ -31,6 +31,8 @@ function EdienilnoWsClient(url) {
    this._onClientOnline = [];
    this._onClientOffline = [];
    this._onMessage = {};
+   this._onRoomMessage = null;
+   this.bindRoom(room);
 
    var _this = this;
    this.event = {
@@ -86,6 +88,10 @@ function EdienilnoWsClient(url) {
             delete _this._onMessage[id];
          }
 
+         if (_this._onRoomMessage) {
+            _this._onRoomMessage(json);
+         }
+
          // clean up fnObj
          Object.keys(_this._onMessage).forEach(function (id) {
             var fnObj = _this._onMessage[id];
@@ -99,7 +105,7 @@ function EdienilnoWsClient(url) {
    this._client = null;
    this.connect();
 }
-EdienilnoWsClient.prototype = {
+BogaWsClient.prototype = {
    _cleanup: function () {
       this.online = false;
       this._client.removeEventListener('open', this.event.open);
@@ -107,7 +113,14 @@ EdienilnoWsClient.prototype = {
       this._client.removeEventListener('error', this.event.error);
       this._client.removeEventListener('message', this.event.message);
    },
-   connect: function () {
+   getReadyState: function () {
+      return this._client.readyState;
+   },
+   bindRoom: function (room) {
+      this._room = room;
+   },
+   connect: function (room) {
+      this.bindRoom(room);
       this._client = new WebSocket(this.url);
       this._client.addEventListener('open', this.event.open);
       this._client.addEventListener('close', this.event.close);
@@ -136,6 +149,9 @@ EdienilnoWsClient.prototype = {
       this._client.send(JSON.stringify(obj));
       return id;
    },
+   onRoomMessage: function (fn) {
+      this._onRoomMessage = fn;
+   },
    onOnline: function(fn) {
       if (this._onClientOnline.indexOf(fn) >= 0) return;
       this._onClientOnline.push(fn);
@@ -147,6 +163,6 @@ EdienilnoWsClient.prototype = {
 };
 
 if (!window.boga) window.boga = {};
-window.boga.WwbsocketClient = EdienilnoWsClient;
+window.boga.WwbsocketClient = BogaWsClient;
 
 })();

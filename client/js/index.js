@@ -9,20 +9,28 @@ var ui = {
    view: dom('#p_view')
 };
 
-var _controller = {
+var _boga = {
+   _client: null,
+   _pluginer: null,
    _online: false
 };
 
 function init_ui() {
-   _controller.client = new boga.WwbsocketClient('/ws');
-   _controller.client.onOnline(function () {
+   _boga._client = new boga.WwbsocketClient('/ws');
+   _boga._client.onOnline(function () {
       console.log('online');
-      _controller._online = true;
+      _boga._online = true;
    });
-   _controller.client.onOffline(function () {
+   _boga._client.onOffline(function () {
       console.log('offline');
-      _controller._online = false;
+      _boga._online = false;
    });
+   _boga._pluginer = new boga.PluginManager({
+      client: _boga._client,
+      view: ui.view
+   });
+   _boga._pluginer.register('lab.chat', './js/component/plugin/chat.js');
+   _boga._pluginer.open('@chat', 'lab.chat');
 }
 
 function before_app() {
