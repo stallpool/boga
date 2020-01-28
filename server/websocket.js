@@ -9,10 +9,10 @@ const system = {
    processor: [],
 };
 
-function process_cmd(ws, m, env) {
+function process_cmd(ws, m, env, type) {
    for (let i = 0, n = system.processor.length; i < n; i++) {
       let processor = system.processor[i];
-      let r = processor(ws, m, env);
+      let r = processor(ws, m, env, type);
       if (r) return r;
    }
 }
@@ -107,11 +107,15 @@ const service = {
             api.send_error(ws, 401, 'Not Authenticated');
             return;
          }
-         process_cmd(ws, m, env);
+         process_cmd(ws, m, env, 'message');
       });
       ws.on('close', () => {
+         if (!env.authenticated) return;
+         process_cmd(ws, {}, env, 'close');
       });
       ws.on('error', (error) => {
+         if (!env.authenticated) return;
+         process_cmd(ws, { error }, env, 'error');
       });
    }
 };

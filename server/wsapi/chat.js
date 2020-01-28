@@ -30,7 +30,17 @@ const api = {
    initialize: () => {
       i_logger.debug('[plugin] "chat" plugin loaded ...');
    },
-   process: (ws, m, env) => {
+   _processClose: (ws, env) => {
+      Object.keys(rooms).forEach((id) => {
+         let room = rooms[id];
+         let obj = { room: id, message: `[${new Date().toISOString()}] [${env.username}] left the room.` };
+         helper.broadcast(room, obj);
+      });
+   },
+   process: (ws, m, env, type) => {
+      if (type === 'close') {
+         return api._processClose(ws, env);
+      }
       let obj = {}, room;
       switch(m.cmd) {
          case 'chat.create':
