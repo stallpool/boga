@@ -1,0 +1,27 @@
+{
+  "name": "boga",
+  "version": "1.0.0",
+  "description": "Oneline BoardGame Platform",
+  "main": "server/index.js",
+  "scripts": {
+    "test": "echo \"No test\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stallpool/boga.git"
+  },
+  "keywords": [
+    "boardgame",
+    "game"
+  ],
+  "author": "Seven Lju",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stallpool/boga/issues"
+  },
+  "homepage": "https://github.com/stallpool/boga#readme",
+  "dependencies": {
+    "uuid": "^3.4.0",
+    "ws": "^7.2.1"
+  }
+}

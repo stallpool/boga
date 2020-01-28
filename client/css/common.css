@@ -1,0 +1,131 @@
+.header-icon {
+   height: 36px;
+   width: 36px;
+   margin-top: 8px;
+}
+
+a.boga-side-item {
+   cursor: pointer;
+   text-decoration: none;
+   width: 100%;
+   display: block;
+   padding: 10px;
+}
+
+a.boga-side-item:hover {
+   opacity: 0.5;
+}
+
+a.boga-side-item:after {
+   content: '>';
+   float: right;
+   margin-top: -45px;
+}
+
+.boga-title-nav-caret {
+   cursor: pointer;
+   display: inline-block;
+   -webkit-appearance: none!important;
+   border-radius: .125rem;
+   border: 1px solid #eeeeee;
+   white-space: nowrap;
+   text-overflow: ellipsis;
+   overflow: hidden;
+   text-align: center;
+   text-transform: uppercase;
+   vertical-align: middle;
+   line-height: 1.5rem;
+   letter-spacing: .12em;
+   font-size: .5rem;
+   font-weight: 500;
+   height: 1.5rem;
+   padding: 0 3px;
+}
+
+.boga-title-nav-caret:hover {
+   background-color: #eeeeee;
+   text-decoration: none;
+}
+
+.disabled {
+   pointer-events: none;
+}
+.xitem {
+   display: block;
+   width: 100%;
+   margin-top: 2px;
+   padding: 10px 0px 10px 10px;
+   text-decoration: none;
+   color: black;
+}
+.xitem-r {
+   display: block;
+   width: 100%;
+   margin-top: 2px;
+   margin-left: -10px;
+   padding: 10px 10px 10px 0;
+   text-decoration: none;
+   text-align: right;
+   color: black;
+}
+.xitem-btn {
+   display: inline-block;
+   padding: 5px;
+   background-color: white;
+   border-radius: 3px;
+   cursor: pointer;
+   margin-top: 2px;
+}
+.xitem-badge {
+   border: 1px solid black;
+   padding: 0 5px 0 5px;
+   margin-left: 10px;
+   cursor: pointer;
+}
+.xitem-input {
+   padding: 5px;
+   border-top: 0;
+   border-left: 0;
+   border-right: 0;
+   border-bottom: 1px solid black;
+   width: 100%;
+}
+a.xitem-r:hover {
+   opacity: 0.5;
+   cursor: pointer;
+   text-decoration: none;
+   color: black;
+}
+a.xitem:hover {
+   opacity: 0.5;
+   cursor: pointer;
+   text-decoration: none;
+   color: black;
+}
+.xitem-btn:hover {
+   border: 1px solid black;
+   color: white;
+   background-color: black;
+   cursor: pointer;
+   text-decoration: none;
+}
+
+.xitem-grey   { background-color: #e2e2e2; }
+.xitem-red    { background-color: #f5cdcd; }
+.xitem-green  { background-color: #cff5cd; }
+.xitem-blue   { background-color: #cdebf5; }
+.xitem-yellow { background-color: #fbf59f; }
+.xitem-orange { background-color: #ffe6cc; }
+.xitem-pink   { background-color: #f5cde8; }
+.xitem-purple { background-color: #dfcdf5; }
+.xitem-gray-1 { background-color: #ddd; }
+.xitem-gray-2 { background-color: #aaa; }
+.xitem-gray-3 { background-color: #777; }
+
+.sebin {
+   position: absolute;
+}
+.sebin-active {
+   background-color: blue;
+   color: white;
+}
