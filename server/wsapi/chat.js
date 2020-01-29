@@ -41,20 +41,16 @@ const api = {
       if (type === 'close') {
          return api._processClose(ws, env);
       }
-      let obj = {}, room;
+      let obj = { id: m.id, room: m.room }, room;
       switch(m.cmd) {
          case 'chat.create':
             // TODO: check admin
-            obj.id = m.id;
-            obj.room = m.room;
             if (!rooms[m.room]) rooms[m.room] = {};
             room = rooms[m.room];
             helper.pushClient(room, ws);
             helper.broadcast(room, obj);
             return 1;
          case 'chat.enter':
-            obj.id = m.id;
-            obj.room = m.room;
             obj.message = `[${new Date().toISOString()}] [${env.username}] entered the room.`;
             i_logger.debug(`[plugin] "chat" room=${obj.room} <- user=${env.username} ...`);
             room = rooms[m.room];
@@ -64,10 +60,16 @@ const api = {
             helper.broadcast(room, obj);
             return 1;
          case 'chat.send':
-            obj.id = m.id;
-            obj.room = m.room;
             obj.message = `[${new Date().toISOString()}] [${env.username}] ${m.message}`;
             i_logger.debug(`[plugin] "chat" room=${obj.room} <- user=${env.username} message=${obj.message} ...`);
+            room = rooms[m.room];
+            if (!room) return 0;
+            if (!room.clients) room.clients = [];
+            helper.broadcast(room, obj);
+            return 1;
+         case 'chat.audio':
+            if (!m.audio) return 0;
+            obj.audio = m.audio;
             room = rooms[m.room];
             if (!room) return 0;
             if (!room.clients) room.clients = [];

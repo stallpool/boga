@@ -3,6 +3,22 @@
    var system = {
       bundle: null
    };
+
+   function to_string(uint) {
+      var str = '';
+      for (var i = 0, n = uint.length; i < n; i++) {
+         str += String.fromCharCode(uint[i]);
+      }
+      return str;
+   }
+   function to_uint(str) {
+      var n = str.length;
+      var arr = new Uint8Array(n);
+      for (var i = 0; i < n; i++) {
+         arr[i] = str.charCodeAt(i);
+      }
+      return arr;
+   }
    
    function BogaChat(id, filename) {
       this.id = id;
@@ -12,7 +28,10 @@
          box1: document.createElement('div'),
          box2: document.createElement('div'),
          input: document.createElement('input'),
-         talk: document.createElement('div')
+         talk: document.createElement('div'),
+
+         chatCall: document.createElement('button'),
+         chatHangUp: document.createElement('button')
       };
       this.data = {
          filename: filename
@@ -46,6 +65,39 @@
       tmp.appendChild(this.dom.input);
       tmp.appendChild(this.dom.talk);
       div.appendChild(tmp);
+
+      tmp = document.createElement('div');
+      this.dom.chatCall.innerHTML = 'Call';
+      this.dom.chatHangUp.innerHTML = 'HangUp';
+      tmp.appendChild(this.dom.chatCall);
+      tmp.appendChild(this.dom.chatHangUp);
+      div.appendChild(tmp);
+      var _that = this;
+      this.__audioR = null;
+      this.__audioP = null;
+      this.dom.chatCall.addEventListener('click', function () {
+         if (!_that.__audioP) _that.__audioP = new window.boga.audio.Player();
+         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
+         _that.__audioR.onDataAvailable(onData);
+         _that.__audioR.start();
+         _that.__audioP.resume();
+
+         function onData(item) {
+            item.data.arrayBuffer().then(function (buf) {
+               system.bundle.client.request({
+                  cmd: 'chat.audio',
+                  room: 'test',
+                  audio: { id: item.id, data: to_string(new Uint8Array(buf)), type: item.type }
+               });
+            });
+         }
+      });
+      this.dom.chatHangUp.addEventListener('click', function () {
+         if (_that.__audioP) _that.__audioP.stop();
+         if (_that.__audioR) _that.__audioR.stop();
+         _that.__audioR = null;
+         _that.__audioP = null;
+      });
 
       var _this = this;
       this.event = {
@@ -122,6 +174,13 @@
 
          system.bundle.client.onRoomMessage(function (obj) {
             console.log('room', obj);
+            if (obj.audio) {
+               if (_this.__audioP) {
+                  obj.audio.data = new Blob([to_uint(obj.audio.data)], obj.audio.type);
+                  _this.__audioP.push(obj.audio);
+               }
+               return;
+            }
             if (!obj.message) return;
             if (_this.dom.talk.children.length >= 10) {
                _this.dom.talk.removeChild(_this.dom.talk.children[_this.dom.talk.children.length-1]);
@@ -166,7 +225,9 @@
       // initialize api on first load
       initialize: function (bundle) {
          system.bundle = bundle;
-         api._ready = true;
+         boga.loadScript('./js/component/recorder.js').then(function () {
+            api._ready = true;
+         });
       },
       // create a new file browser with an ID
       create: function (filename) {
