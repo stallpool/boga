@@ -1,7 +1,8 @@
 (function () {
 
    var system = {
-      bundle: null
+      bundle: null,
+      room: location.hash
    };
 
    function to_string(uint) {
@@ -33,6 +34,27 @@
          }
       });
    }
+
+   function bogaAudioRecord(recorder) {
+      recorder.onDataAvailable(onData);
+      recorder.start();
+
+      function onData(item) {
+         var pr = item.data.arrayBuffer?item.data.arrayBuffer():to_arraybuffer(item.data);
+         pr.then(function (buf) {
+            system.bundle.client.request({
+               cmd: 'chat.audio',
+               room: system.room,
+               audio: {
+                  id: item.id,
+                  data: to_string(new Uint8Array(buf)),
+                  type: item.data.type,
+                  from: env.user.username
+               }
+            });
+         });
+      }
+   }
    
    function BogaChat(id, filename) {
       this.id = id;
@@ -41,6 +63,7 @@
          self: div,
          box1: document.createElement('div'),
          box2: document.createElement('div'),
+
          input: document.createElement('input'),
          talk: document.createElement('div'),
 
@@ -76,70 +99,6 @@
       div.appendChild(this.dom.box2);
       div.appendChild(this.dom.box1);
 
-      div.appendChild(document.createTextNode('Chat'));
-      var tmp = document.createElement('div');
-      tmp.appendChild(this.dom.input);
-      tmp.appendChild(this.dom.talk);
-      div.appendChild(tmp);
-
-      tmp = document.createElement('div');
-      this.dom.chatCall.innerHTML = 'Call';
-      this.dom.chatSpeaker.innerHTML = 'Speak';
-      this.dom.chatListener.innerHTML = 'Listen';
-      this.dom.chatHangUp.innerHTML = 'HangUp';
-      tmp.appendChild(this.dom.chatSpeaker);
-      tmp.appendChild(this.dom.chatListener);
-      tmp.appendChild(this.dom.chatCall);
-      tmp.appendChild(this.dom.chatHangUp);
-      div.appendChild(tmp);
-      var _that = this;
-      this.__audioR = null;
-      this.__audioP = null;
-      this.dom.chatSpeaker.addEventListener('click', function () {
-         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
-         _that.__audioR.onDataAvailable(onData);
-         _that.__audioR.start();
-
-         function onData(item) {
-            var pr = item.data.arrayBuffer?item.data.arrayBuffer():to_arraybuffer(item.data);
-            pr.then(function (buf) {
-               system.bundle.client.request({
-                  cmd: 'chat.audio',
-                  room: 'test',
-                  audio: { id: item.id, data: to_string(new Uint8Array(buf)), type: item.type }
-               });
-            });
-         }
-      });
-      this.dom.chatListener.addEventListener('click', function () {
-         if (!_that.__audioP) _that.__audioP = new window.boga.audio.Player();
-         _that.__audioP.resume();
-      });
-      this.dom.chatCall.addEventListener('click', function () {
-         if (!_that.__audioP) _that.__audioP = new window.boga.audio.Player();
-         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
-         _that.__audioR.onDataAvailable(onData);
-         _that.__audioR.start();
-         _that.__audioP.resume();
-
-         function onData(item) {
-            var pr = item.data.arrayBuffer?item.data.arrayBuffer():to_arraybuffer(item.data);
-            pr.then(function (buf) {
-               system.bundle.client.request({
-                  cmd: 'chat.audio',
-                  room: 'test',
-                  audio: { id: item.id, data: to_string(new Uint8Array(buf)), type: item.type }
-               });
-            });
-         }
-      });
-      this.dom.chatHangUp.addEventListener('click', function () {
-         if (_that.__audioP) _that.__audioP.stop();
-         if (_that.__audioR) _that.__audioR.stop();
-         _that.__audioR = null;
-         _that.__audioP = null;
-      });
-
       var _this = this;
       this.event = {
          obj: {
@@ -173,7 +132,7 @@
                _this.dom.input.classList.add('disabled');
                system.bundle.client.request({
                   cmd: 'chat.send',
-                  room: 'test',
+                  room: system.room,
                   message: _this.dom.input.value
                }, function (data) {
                   console.log('ack', data);
@@ -189,11 +148,51 @@
       this.dom.box1.addEventListener('dragend', this.event.obj.drop);
       div.addEventListener('dragover', this.event.container.dragover);
       div.addEventListener('drop', this.event.container.drop);
+      this.hide();
+
+      if (!system.room) return;
+
+      div.appendChild(document.createTextNode('Chat'));
+      var tmp = document.createElement('div');
+      tmp.appendChild(this.dom.input);
+      tmp.appendChild(this.dom.talk);
+      div.appendChild(tmp);
       this.dom.input.addEventListener('keydown', this.event.chat.inputEnter);
 
-      joinRoom(system.bundle.client, 'test');
-
-      this.hide();
+      tmp = document.createElement('div');
+      this.dom.chatCall.innerHTML = 'Call';
+      this.dom.chatSpeaker.innerHTML = 'Speak';
+      this.dom.chatListener.innerHTML = 'Listen';
+      this.dom.chatHangUp.innerHTML = 'HangUp';
+      tmp.appendChild(this.dom.chatSpeaker);
+      tmp.appendChild(this.dom.chatListener);
+      tmp.appendChild(this.dom.chatCall);
+      tmp.appendChild(this.dom.chatHangUp);
+      div.appendChild(tmp);
+      var _that = this;
+      this.__audioR = null;
+      this.__audioP = null;
+      this.dom.chatSpeaker.addEventListener('click', function () {
+         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
+         bogaAudioRecord(_that.__audioR);
+      });
+      this.dom.chatListener.addEventListener('click', function () {
+         if (!_that.__audioP) _that.__audioP = new window.boga.audio.MultiPlayer();
+         _that.__audioP.resume();
+      });
+      this.dom.chatCall.addEventListener('click', function () {
+         if (!_that.__audioP) _that.__audioP = new window.boga.audio.MultiPlayer();
+         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
+         bogaAudioRecord(_that.__audioR);
+         _that.__audioP.resume();
+      });
+      this.dom.chatHangUp.addEventListener('click', function () {
+         if (_that.__audioP) _that.__audioP.stop();
+         if (_that.__audioR) _that.__audioR.stop();
+         _that.__audioR = null;
+         _that.__audioP = null;
+      });
+      joinRoom(system.bundle.client, system.room);
 
       function joinRoom(client, room) {
          if (client.getReadyState() !== WebSocket.OPEN) {
@@ -216,9 +215,12 @@
          system.bundle.client.onRoomMessage(function (obj) {
             console.log('room', obj);
             if (obj.audio) {
-               if (_this.__audioP) {
-                  obj.audio.data = new Blob([to_uint(obj.audio.data)], obj.audio.type);
-                  _this.__audioP.push(obj.audio);
+               if (_this.__audioP && obj.audio.from) {
+                  obj.audio.data = new Blob(
+                     [to_uint(obj.audio.data)],
+                     obj.audio.type && { type: obj.audio.type }
+                  );
+                  _this.__audioP.push(obj.audio.from, obj.audio);
                }
                return;
             }
@@ -266,7 +268,7 @@
       // initialize api on first load
       initialize: function (bundle) {
          system.bundle = bundle;
-         boga.loadScript('./js/component/recorder.js').then(function () {
+         boga.loadScript('./js/component/audio.js').then(function () {
             api._ready = true;
          });
       },

@@ -54,12 +54,12 @@ BogaRecorder.prototype = {
    }
 };
 
-function BogaPlayer() {
+function BogaPlayer(context) {
    this._buf = [];
    this._bufLimit = 100;
    this._stopped = false;
    this._busy = false;
-   this._context = new window.AudioContext();
+   this._context = context || new window.AudioContext();
 }
 BogaPlayer.prototype = {
    _positionOf: function (id) {
@@ -76,8 +76,11 @@ BogaPlayer.prototype = {
       }
       return b;
    },
+   getContext: function () {
+      return this._context;
+   },
    push: function (item) {
-      // item = { id, data<blobl> }
+      // item = { id, data<blobl>, type, from }
       if (!this._buf.length) {
          this._buf.push(item);
          return true;
@@ -131,10 +134,54 @@ BogaPlayer.prototype = {
    }
 };
 
+function BogaMultiPlayer(context) {
+   this._context = context || new window.AudioContext();
+   this._players = {};
+   this._stopped = false;
+}
+BogaMultiPlayer.prototype = {
+   pop: function (user) {
+      var player = this._players[user];
+      if (player) player.stop();
+      delete this._players[user];
+   },
+   push: function (user, item) {
+      var player = this._players[user];
+      if (!player) {
+         player = new BogaPlayer(this._context);
+         this._players[user] = player;
+         if (!this._stopped) {
+            player.resume();
+         }
+      }
+      player.push(item);
+   },
+   play: function () {
+      var _this = this;
+      Object.keys(this._players).forEach(function (user) {
+         var player = _this._players[user];
+         player.resume();
+      });
+   },
+   resume: function () {
+      this._stopped = false;
+      this.play();
+   },
+   stop: function () {
+      this._stopped = true;
+      var _this = this;
+      Object.keys(this._players).forEach(function (user) {
+         var player = _this._players[user];
+         player.stop();
+      });
+   }
+};
+
 if (!window.boga) window.boga = {};
 if (!window.boga.audio) window.boga.audio = {};
 // TODO: check supported
 window.boga.audio.Recorder = BogaRecorder;
 window.boga.audio.Player = BogaPlayer;
+window.boga.audio.MultiPlayer = BogaMultiPlayer;
 
 })();
