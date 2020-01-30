@@ -42,6 +42,9 @@ function resize() {
 
 function register_events() {
    window.addEventListener('resize', resize);
+   window.addEventListener('hashchange', function () {
+      window.location.reload(true);
+   });
 }
 
 function init_app() {
