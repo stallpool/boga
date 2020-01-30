@@ -19,6 +19,20 @@
       }
       return arr;
    }
+   function to_arraybuffer(blob) {
+      return new Promise(function (r, e) {
+         var reader = new FileReader();
+         reader.addEventListener('loadend', onData);
+         reader.readAsArrayBuffer(blob);
+         reader = null;
+   
+         function onData (evt) {
+            evt.target.removeEventListener('loadend', onData);
+            var result = evt.target.result;
+            r(result);
+         }
+      });
+   }
    
    function BogaChat(id, filename) {
       this.id = id;
@@ -30,6 +44,8 @@
          input: document.createElement('input'),
          talk: document.createElement('div'),
 
+         chatSpeaker: document.createElement('button'),
+         chatListener: document.createElement('button'),
          chatCall: document.createElement('button'),
          chatHangUp: document.createElement('button')
       };
@@ -68,13 +84,37 @@
 
       tmp = document.createElement('div');
       this.dom.chatCall.innerHTML = 'Call';
+      this.dom.chatSpeaker.innerHTML = 'Speak';
+      this.dom.chatListener.innerHTML = 'Listen';
       this.dom.chatHangUp.innerHTML = 'HangUp';
+      tmp.appendChild(this.dom.chatSpeaker);
+      tmp.appendChild(this.dom.chatListener);
       tmp.appendChild(this.dom.chatCall);
       tmp.appendChild(this.dom.chatHangUp);
       div.appendChild(tmp);
       var _that = this;
       this.__audioR = null;
       this.__audioP = null;
+      this.dom.chatSpeaker.addEventListener('click', function () {
+         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
+         _that.__audioR.onDataAvailable(onData);
+         _that.__audioR.start();
+
+         function onData(item) {
+            var pr = item.data.arrayBuffer?item.data.arrayBuffer():to_arraybuffer(item.data);
+            pr.then(function (buf) {
+               system.bundle.client.request({
+                  cmd: 'chat.audio',
+                  room: 'test',
+                  audio: { id: item.id, data: to_string(new Uint8Array(buf)), type: item.type }
+               });
+            });
+         }
+      });
+      this.dom.chatListener.addEventListener('click', function () {
+         if (!_that.__audioP) _that.__audioP = new window.boga.audio.Player();
+         _that.__audioP.resume();
+      });
       this.dom.chatCall.addEventListener('click', function () {
          if (!_that.__audioP) _that.__audioP = new window.boga.audio.Player();
          if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
@@ -83,7 +123,8 @@
          _that.__audioP.resume();
 
          function onData(item) {
-            item.data.arrayBuffer().then(function (buf) {
+            var pr = item.data.arrayBuffer?item.data.arrayBuffer():to_arraybuffer(item.data);
+            pr.then(function (buf) {
                system.bundle.client.request({
                   cmd: 'chat.audio',
                   room: 'test',
