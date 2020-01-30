@@ -1,27 +1,34 @@
 const i_logger = require('../logger');
 
 const rooms = {
-   // uuid: { clients: [] }
+   // uuid: { clients: {} }
 };
 
 const helper = {
    cleanRoom: (room) => {
       if (!room.clients) return;
-      room.clients = room.clients.filter((x) => {
-         return x.readyState !== x.CLOSED || x.readyState !== x.CLOSING;
+      Object.keys((username) => {
+         let user_obj = room.clients[username];
+         let ws = user_obj.ws;
+         if (ws.readyState === ws.CLOSED || ws.readyState === ws.CLOSING) {
+            delete room.clients[username];
+         }
       });
    },
-   pushClient: (room, ws) => {
-      if (!room.clients) room.clients = [];
-      if (room.clients.indexOf(ws) >= 0) return;
+   pushClient: (room, username, ws) => {
+      if (!room.clients) room.clients = {};
+      if (!room.clients[username]) room.clients[username] = {};
+      var user_obj = room.clients[username];
+      user_obj.username = username;
+      user_obj.ws = ws;
       helper.cleanRoom(room);
-      room.clients.push(ws);
    },
-   broadcast: (room, obj) => {
+   broadcast: (room, obj, filterFn) => {
       if (!room.clients) return;
-      room.clients.forEach((ws) => {
-         if (ws.readyState !== ws.OPEN) return;
-         ws.send(JSON.stringify(obj));
+      var users = filterFn?filterFn(room.clients):Object.values(room.clients);
+      users.forEach((user_obj) => {
+         if (user_obj.ws.readyState !== user_obj.ws.OPEN) return;
+         user_obj.ws.send(JSON.stringify(obj));
       });
    },
 };
@@ -47,7 +54,7 @@ const api = {
             // TODO: check admin
             if (!rooms[m.room]) rooms[m.room] = {};
             room = rooms[m.room];
-            helper.pushClient(room, ws);
+            helper.pushClient(room, env.username, ws);
             helper.broadcast(room, obj);
             return 1;
          case 'chat.enter':
@@ -56,7 +63,7 @@ const api = {
             room = rooms[m.room];
             if (!room) return 0;
             if (!room.clients) room.clients = [];
-            helper.pushClient(room, ws);
+            helper.pushClient(room, env.username, ws);
             helper.broadcast(room, obj);
             return 1;
          case 'chat.send':
@@ -69,11 +76,16 @@ const api = {
             return 1;
          case 'chat.audio':
             if (!m.audio) return 0;
+            if (!m.audio.from) return 0;
             obj.audio = m.audio;
             room = rooms[m.room];
             if (!room) return 0;
             if (!room.clients) room.clients = [];
-            helper.broadcast(room, obj);
+            helper.broadcast(room, obj, (clients) => {
+               return Object.values(clients).filter((user_obj) => {
+                  return m.audio.from !== user_obj.username;
+               });
+            });
             return 1;
       }
    },
