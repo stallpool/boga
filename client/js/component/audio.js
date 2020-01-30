@@ -90,6 +90,11 @@ BogaPlayer.prototype = {
       this._buf.splice(index+1, 0, item);
       while (this._buf.length > this._bufLimit) this._buf.pop();
    },
+   clear: function () {
+      var buf = this._buf;
+      this._buf = [];
+      while(buf.length) buf.pop();
+   },
    play: function (self) {
       if (!self) self = this;
       if (self._stopped) return;
@@ -131,6 +136,7 @@ BogaPlayer.prototype = {
    },
    stop: function () {
       this._stopped = true;
+      this.clear();
    }
 };
 
