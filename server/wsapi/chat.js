@@ -1,7 +1,7 @@
 const i_logger = require('../logger');
 
 const rooms = {
-   // uuid: { clients: {} }
+   // uuid: { clients: { username: { username, ws } } }
 };
 
 const helper = {
@@ -40,6 +40,17 @@ const api = {
    _processClose: (ws, env) => {
       Object.keys(rooms).forEach((id) => {
          let room = rooms[id];
+         if (!room.clients) return;
+         delete room.clients[env.username];
+         let usernames = Object.keys(room.clients).filter((username) => {
+            let user_obj = room.clients[username];
+            let ws = user_obj.ws;
+            return ws.readyState === ws.OPEN || ws.readyState === ws.CONNECTING;
+         });
+         if (!usernames.length) {
+            delete rooms[id];
+            return;
+         }
          let obj = { room: id, message: `[${new Date().toISOString()}] [${env.username}] left the room.` };
          helper.broadcast(room, obj);
       });

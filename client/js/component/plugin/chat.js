@@ -55,22 +55,26 @@
          });
       }
    }
-   
+
    function BogaChat(id, filename) {
       this.id = id;
       var div = document.createElement('div');
       this.dom = {
          self: div,
-         box1: document.createElement('div'),
-         box2: document.createElement('div'),
+
+         fbox: {
+            self: document.createElement('div'),
+            title: document.createElement('div'),
+            body: document.createElement('div')
+         },
 
          input: document.createElement('input'),
          talk: document.createElement('div'),
 
+         onlineMark: document.createElement('button'),
          chatSpeaker: document.createElement('button'),
          chatListener: document.createElement('button'),
-         chatCall: document.createElement('button'),
-         chatHangUp: document.createElement('button')
+         chatCall: document.createElement('button')
       };
       this.data = {
          filename: filename
@@ -79,52 +83,10 @@
 
       div.style.width = '100%';
       div.style.height = '100%';
-
-      this.dom.box1.id = 'box1';
-      this.dom.box1.setAttribute('draggable', 'true');
-      this.dom.box1.style.width = '50px';
-      this.dom.box1.style.height = '50px';
-      this.dom.box1.style.margin = '2px';
-      this.dom.box1.style.border = '1px solid black';
-      this.dom.box1.style.backgroundColor = 'green';
-
-      this.dom.box2.id = 'box2';
-      this.dom.box2.style.width = '150px';
-      this.dom.box2.style.height = '150px';
-      this.dom.box2.style.margin = '2px';
-      this.dom.box2.style.border = '1px solid black';
-      this.dom.box2.style.backgroundColor = 'red';
-
-      div.innerHTML = 'Drag and Drop!';
-      div.appendChild(this.dom.box2);
-      div.appendChild(this.dom.box1);
+      this.hide();
 
       var _this = this;
       this.event = {
-         obj: {
-            _target: null,
-            drag: function (evt) {
-               _this.event.obj._target = evt.target;
-               evt.target.style.opacity = 0.5;
-            },
-            drop: function (evt) {
-               evt.target.style.opacity = '';
-            }
-         },
-         container: {
-            dragover: function (evt) {
-               evt.preventDefault();
-               evt.stopPropagation();
-            },
-            drop: function (evt) {
-               evt.preventDefault();
-               var elem = _this.event.obj._target;
-               if (!elem) return;
-               if (evt.target === elem) return;
-               _this.event.obj._target = null;
-               evt.target.appendChild(elem);
-            }
-         },
          chat: {
             inputEnter: function (evt) {
                if (evt.keyCode !== 13) return;
@@ -140,58 +102,183 @@
                   _this.dom.input.value = '';
                   _this.dom.input.focus();
                });
+            } // inputEnter
+         }, // chat
+         chatbox: {
+            offsetX: 0,
+            offsetY: 0,
+            mask: null,
+            titleMouseDown: function (evt) {
+               var mask = document.createElement('div');
+               mask.style.position = 'fixed';
+               mask.style.width = '100%';
+               mask.style.height = '100%';
+               mask.style.top = '0px';
+               mask.style.left = '0px';
+               mask.style.zIndex = 9000;
+               mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
+               mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
+               _this.event.chatbox.mask = mask;
+               _this.event.chatbox.offsetX = evt.offsetX;
+               _this.event.chatbox.offsetY = evt.offsetY;
+               _this.dom.self.appendChild(mask);
+            },
+            titleDrag: function (evt) {
+               var fbox = _this.dom.fbox.self;
+               fbox.style.top = (evt.clientY - _this.event.chatbox.offsetY) + 'px';
+               fbox.style.left = (evt.clientX - _this.event.chatbox.offsetX) + 'px';
+            },
+            titleDrop: function (evt) {
+               var mask = _this.event.chatbox.mask;
+               _this.event.chatbox.mask = null;
+               _this.event.chatbox.offsetX = 0;
+               _this.event.chatbox.offsetY = 0;
+               mask.removeEventListener('mousemove', _this.event.chatbox.titleDrag);
+               mask.removeEventListener('mouseup', _this.event.chatbox.titleDrop);
+               mask.parentNode.removeChild(mask);
             }
-         }
+         } // chatbox
       };
 
-      this.dom.box1.addEventListener('dragstart', this.event.obj.drag);
-      this.dom.box1.addEventListener('dragend', this.event.obj.drop);
-      div.addEventListener('dragover', this.event.container.dragover);
-      div.addEventListener('drop', this.event.container.drop);
-      this.hide();
+      if (!system.room) {
+         div.innerHTML = 'No Selected Room';
+         return;
+      }
 
-      if (!system.room) return;
-
-      div.appendChild(document.createTextNode('Chat'));
-      var tmp = document.createElement('div');
-      tmp.appendChild(this.dom.input);
-      tmp.appendChild(this.dom.talk);
-      div.appendChild(tmp);
-      this.dom.input.addEventListener('keydown', this.event.chat.inputEnter);
+      this.dom.fbox.self.style.position = 'fixed';
+      this.dom.fbox.self.style.backgroundColor = 'white';
+      this.dom.fbox.self.style.width = '240px';
+      this.dom.fbox.self.style.left = (window.innerWidth - 245) + 'px';
+      this.dom.fbox.self.style.border = '1px solid black';
+      this.dom.fbox.self.style.padding = '2px';
+      this.dom.fbox.title.style.cursor = 'pointer';
+      this.dom.fbox.title.innerHTML = 'ChatBox';
+      this.dom.fbox.title.addEventListener('mousedown', this.event.chatbox.titleMouseDown);
+      this.dom.fbox.self.appendChild(this.dom.fbox.title);
+      this.dom.fbox.self.appendChild(this.dom.fbox.body);
+      div.appendChild(this.dom.fbox.self);
 
       tmp = document.createElement('div');
+      this.dom.onlineMark.innerHTML = 'Online';
       this.dom.chatCall.innerHTML = 'Call';
       this.dom.chatSpeaker.innerHTML = 'Speak';
       this.dom.chatListener.innerHTML = 'Listen';
-      this.dom.chatHangUp.innerHTML = 'HangUp';
+      tmp.appendChild(this.dom.onlineMark);
       tmp.appendChild(this.dom.chatSpeaker);
       tmp.appendChild(this.dom.chatListener);
       tmp.appendChild(this.dom.chatCall);
-      tmp.appendChild(this.dom.chatHangUp);
-      div.appendChild(tmp);
+      this.dom.fbox.body.appendChild(tmp);
       var _that = this;
+      var status = {
+         online: true,
+         speak: false,
+         listen: false
+      };
       this.__audioR = null;
       this.__audioP = null;
-      this.dom.chatSpeaker.addEventListener('click', function () {
+      function updateUIByStatus() {
+         if (status.online) {
+            _this.dom.onlineMark.style.backgroundColor = '#99ff99';
+         } else {
+            _this.dom.onlineMark.style.backgroundColor = '#dddddd';
+         }
+         if (status.speak) {
+            _this.dom.chatSpeaker.style.backgroundColor = '#99ff99';
+         } else {
+            _this.dom.chatSpeaker.style.backgroundColor = '#dddddd';
+         }
+         if (status.listen) {
+            _this.dom.chatListener.style.backgroundColor = '#99ff99';
+         } else {
+            _this.dom.chatListener.style.backgroundColor = '#dddddd';
+         }
+         if (!status.speak && !status.listen) {
+            _this.dom.chatCall.style.backgroundColor = '#dddddd';
+         } else {
+            _this.dom.chatCall.style.backgroundColor = '#99ff99';
+         }
+      }
+      function startAudioR() {
          if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
          bogaAudioRecord(_that.__audioR);
-      });
-      this.dom.chatListener.addEventListener('click', function () {
+         status.speak = true;
+      }
+      function startAudioP() {
          if (!_that.__audioP) _that.__audioP = new window.boga.audio.MultiPlayer();
          _that.__audioP.resume();
-      });
-      this.dom.chatCall.addEventListener('click', function () {
-         if (!_that.__audioP) _that.__audioP = new window.boga.audio.MultiPlayer();
-         if (!_that.__audioR) _that.__audioR = new window.boga.audio.Recorder();
-         bogaAudioRecord(_that.__audioR);
-         _that.__audioP.resume();
-      });
-      this.dom.chatHangUp.addEventListener('click', function () {
-         if (_that.__audioP) _that.__audioP.stop();
+         status.listen = true;
+      }
+      function stopAudioR() {
          if (_that.__audioR) _that.__audioR.stop();
          _that.__audioR = null;
-         _that.__audioP = null;
+         status.speak = false;
+      }
+      function stopAudioP() {
+         if (_that.__audioP) _that.__audioP.stop();
+         _that.__audioR = null;
+         status.listen = false;
+      }
+      updateUIByStatus();
+      system.bundle.client.onOnline(function () {
+         status.online = true;
+         updateUIByStatus();
       });
+      system.bundle.client.onOffline(function () {
+         status.online = false;
+         stopAudioR();
+         stopAudioP();
+         updateUIByStatus();
+      });
+      this.dom.onlineMark.addEventListener('click', function () {
+         if (status.online) {
+            status.online = false;
+            updateUIByStatus();
+            system.bundle.client.disconnect();
+         } else {
+            system.bundle.client.connect(system.room);
+            system.bundle.client.waitForConnected(10000).then(function () {
+               status.online = true;
+               updateUIByStatus();
+               joinRoom(system.bundle.client, system.room);
+            }, function () {
+               status.online = false;
+               updateUIByStatus();
+               system.bundle.client.disconnect();
+            });
+         }
+      });
+      this.dom.chatSpeaker.addEventListener('click', function () {
+         if (!status.online) return;
+         if (status.speak) stopAudioR(); else startAudioR();
+         updateUIByStatus();
+      });
+      this.dom.chatListener.addEventListener('click', function () {
+         if (!status.online) return;
+         if (status.listen) stopAudioP(); else startAudioP();
+         updateUIByStatus();
+      });
+      this.dom.chatCall.addEventListener('click', function () {
+         if (!status.online) return;
+         if (!status.speak && !status.listen) {
+            startAudioR();
+            startAudioP();
+         } else {
+            if (status.speak) {
+               stopAudioR();
+            }
+            if (status.listen) {
+               stopAudioP();
+            }
+         }
+         updateUIByStatus();
+      });
+
+      var tmp = document.createElement('div');
+      tmp.appendChild(this.dom.input);
+      tmp.appendChild(this.dom.talk);
+      this.dom.fbox.body.appendChild(tmp);
+      this.dom.input.addEventListener('keydown', this.event.chat.inputEnter);
+
       joinRoom(system.bundle.client, system.room);
 
       function joinRoom(client, room) {
@@ -253,10 +340,7 @@
          this.dom.self.style.display = 'none';
       },
       dispose: function () {
-         this.dom.box1.removeEventListener('dragstart', this.event.obj.drag);
-         this.dom.box1.removeEventListener('dragend', this.event.obj.drop);
-         this.dom.self.removeEventListener('dragover', this.event.container.dragover);
-         this.dom.self.removeEventListener('drop', this.event.container.drop);
+         this.dom.fbox.title.removeEventListener('mousedown', this.event.chatbox.titleMouseDown);
          this.dom.input.removeEventListener('keydown', this.event.chat.inputEnter);
          system.bundle.view.removeChild(this.dom.nav.dom.self);
       }

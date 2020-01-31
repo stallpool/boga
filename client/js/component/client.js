@@ -159,6 +159,21 @@ BogaWsClient.prototype = {
    onOffline: function (fn) {
       if (this._onClientOffline.indexOf(fn) >= 0) return;
       this._onClientOffline.push(fn);
+   },
+   waitForConnected: function (timeout) {
+      var _this = this;
+      return new Promise(function (r, e) {
+         var isTimeout = false;
+         setTimeout(function () {
+            isTimeout = true;
+         }, timeout);
+         wait();
+         function wait() {
+            if (isTimeout) return e();
+            if (_this._client.readyState === WebSocket.OPEN) return r();
+            setTimeout(wait);
+         }
+      });
    }
 };
 
