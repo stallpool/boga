@@ -88,12 +88,14 @@
             selected: [],
             dragOffset: { px: 0, py: 0 },
             dragImageBuffer: null,
+            dragStableObject: false,
             mouseClickCount: 0,
             mouseDownTimer: null,
             mouseUpTimer: null,
             drop: function (evt) {
                var selected = _this.event.canvas.selected.slice();
                if (!selected || !selected.length) return;
+               if (_this.event.canvas.dragStableObject) return;
                var area, areaName;
                if (evt.offsetY > _this.public_h) {
                   area = _this.visualObjs.private;
@@ -128,13 +130,24 @@
                } else if (_this.event.canvas.selected.indexOf(selected) < 0) {
                   _this.event.canvas.selected = [selected];
                }
-               var objs = _this._selectArea(evt.offsetX, evt.offsetY);
-               _this.event.canvas.selected.forEach(function (selected) {
-                  var index = objs.indexOf(selected);
-                  objs.splice(index, 1);
-               });
-               _this.event.canvas.dragOffset.px = evt.offsetX;
-               _this.event.canvas.dragOffset.py = evt.offsetY;
+               if (_this.event.canvas.selected && _this.event.canvas.selected.length) {
+                  _this.event.canvas.dragStableObject = !_this.event.canvas.selected.map(
+                     function (x) { return !x.stable; }
+                  ).reduce(
+                     function (a, b) { return a && b; }
+                  );
+               } else {
+                  _this.event.canvas.dragStableObject = true;
+               }
+               if (!_this.event.canvas.dragStableObject) {
+                  var objs = _this._selectArea(evt.offsetX, evt.offsetY);
+                  _this.event.canvas.selected.forEach(function (selected) {
+                     var index = objs.indexOf(selected);
+                     objs.splice(index, 1);
+                  });
+                  _this.event.canvas.dragOffset.px = evt.offsetX;
+                  _this.event.canvas.dragOffset.py = evt.offsetY;
+               }
                requestAnimationFrame(function () {
                   _this.paint();
                   _this.event.canvas.dragImageBuffer = _this._to_img(_this.canvas);
@@ -143,6 +156,10 @@
             click: function (evt) {
                var selected = _this._select(evt.offsetX, evt.offsetY);
                if (selected) {
+                  var objs = _this._selectArea(evt.offsetX, evt.offsetY);
+                  var index = objs.indexOf(selected);
+                  objs.splice(index, 1);
+                  objs.push(selected);
                   _this.event.canvas.selected = [selected];
                } else {
                   _this.event.canvas.selected = [];
@@ -161,17 +178,18 @@
                   return;
                }
                var objs = _this._selectArea(evt.offsetX, evt.offsetY);
-               var group = [selected];
+               var group = [{ index: objs.indexOf(selected), elem: selected }];
                if (objs === _this.visualObjs.private) {
                   objs = objs.slice();
                   objs.splice(objs.indexOf(selected), 1);
+                  objs = objs.map(function (x, i) { return { index: i, elem: x }; });
                   var changed = false;
                   do {
                      var filterin = [], filterout = [], pushed = false;
                      objs.forEach(function (one) {
                         pushed = false;
                         for(var i = 0, n = group.length; i < n; i++) {
-                           if (_this._cross(one, group[i])) {
+                           if (_this._cross(one.elem, group[i].elem)) {
                               filterin.push(one);
                               pushed = true;
                               break;
@@ -184,7 +202,8 @@
                      changed = !!filterin.length;
                   } while (changed);
                }
-               _this.event.canvas.selected = group;
+               group = group.sort(function (a, b) { return b.index - a.index; });
+               _this.event.canvas.selected = group.map(function (one) { return one.elem; });
                requestAnimationFrame(function () {
                   _this.paint();
                });
@@ -227,6 +246,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                   // drag move
                   var selected = _this.event.canvas.selected.slice();
                   if (selected && selected.length) {
+                     if (_this.event.canvas.dragStableObject) return;
                      if (!_this.event.canvas.dragImageBuffer) return;
                      requestAnimationFrame(function () {
                         if (!selected || !selected.length) return;
@@ -680,7 +700,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
       }
       function stopAudioP() {
          if (_that.__audioP) _that.__audioP.stop();
-         _that.__audioR = null;
+         _that.__audioP = null;
          status.listen = false;
       }
       updateUIByStatus();
@@ -775,6 +795,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                      obj.audio.type && { type: obj.audio.type }
                   );
                   _this.__audioP.push(obj.audio.from, obj.audio);
+                  _this.__audioP.play();
                }
                return;
             }

@@ -57,7 +57,7 @@ BogaRecorder.prototype = {
 function BogaPlayer(context) {
    this._buf = [];
    this._bufLimit = 100;
-   this._stopped = false;
+   this._stopped = true;
    this._busy = false;
    this._context = context || new window.AudioContext();
 }
@@ -102,7 +102,6 @@ BogaPlayer.prototype = {
       var item = self._buf[0];
       if (!item) {
          self._buf.shift();
-         setTimeout(self.play, 0, self);
          return;
       }
       self._busy = true;
@@ -143,7 +142,7 @@ BogaPlayer.prototype = {
 function BogaMultiPlayer(context) {
    this._context = context || new window.AudioContext();
    this._players = {};
-   this._stopped = false;
+   this._stopped = true;
 }
 BogaMultiPlayer.prototype = {
    pop: function (user) {
@@ -163,6 +162,7 @@ BogaMultiPlayer.prototype = {
       player.push(item);
    },
    play: function () {
+      if (this._stopped) return;
       var _this = this;
       Object.keys(this._players).forEach(function (user) {
          var player = _this._players[user];
