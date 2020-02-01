@@ -100,6 +100,9 @@ const api = {
             return 1;
       }
    },
+   getRooms: () => {
+      return rooms;
+   }
 };
 
 module.exports = api;

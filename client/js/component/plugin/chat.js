@@ -5,6 +5,13 @@
       room: location.hash
    };
 
+   function polyfillOffset(evt) {
+      return {
+         x: evt.clientX,
+         y: evt.clientY - 96
+      };
+   }
+
    function to_string(uint) {
       var str = '';
       for (var i = 0, n = uint.length; i < n; i++) {
@@ -93,20 +100,34 @@
             mouseDownTimer: null,
             mouseUpTimer: null,
             drop: function (evt) {
+               var cur = polyfillOffset(evt);
                var selected = _this.event.canvas.selected.slice();
                if (!selected || !selected.length) return;
                if (_this.event.canvas.dragStableObject) return;
                var area, areaName;
-               if (evt.offsetY > _this.public_h) {
+               if (cur.y > _this.public_h) {
                   area = _this.visualObjs.private;
                   areaName = 'private';
                } else {
                   area = _this.visualObjs.public;
                   areaName = 'public';
                }
+               var selectedFirst = selected[0];
+               var moveMode = null;
+               if (selectedFirst) {
+                  if (areaName === 'private' && selectedFirst.area === 'private') {
+                     moveMode = 'p-p';
+                  } else if (areaName === 'private' && selectedFirst.area === 'public') {
+                     moveMode = 'P-p';
+                  } else if (areaName === 'public' && selectedFirst.area === 'private') {
+                     moveMode = 'p-P';
+                  } else if (areaName === 'public' && selectedFirst.area === 'public') {
+                     moveMode = 'P-P';
+                  }
+               }
                selected.reverse().forEach(function (one) {
-                  one.y += evt.offsetY - _this.event.canvas.dragOffset.py;
-                  one.x += evt.offsetX - _this.event.canvas.dragOffset.px;
+                  one.y += cur.y - _this.event.canvas.dragOffset.py;
+                  one.x += cur.x - _this.event.canvas.dragOffset.px;
                   if (one.area !== areaName) {
                      one.area = areaName;
                      if (areaName === 'private') {
@@ -117,6 +138,48 @@
                   }
                   area.push(one);
                });
+               switch(moveMode) {
+                  case 'p-p':
+                     _this.wsPokeMovePrivate(selected.map(function (card) {
+                        return {
+                           id: card.id,
+                           val: card.val,
+                           x: card.x / _this.private_w,
+                           y: card.y / _this.private_h
+                        };
+                     }));
+                     break;
+                  case 'P-p':
+                     _this.wsPokePull(selected.map(function (card) {
+                        return {
+                           id: card.id,
+                           val: card.val,
+                           x: card.x / _this.private_w,
+                           y: card.y / _this.private_h
+                        };
+                     }));
+                     break;
+                  case 'p-P':
+                     _this.wsPokePush(selected.map(function (card) {
+                        return {
+                           id: card.id,
+                           val: card.val,
+                           x: card.x / _this.public_w,
+                           y: card.y / _this.public_h
+                        };
+                     }));
+                     break;
+                  case 'P-P':
+                     _this.wsPokeMovePublic(selected.map(function (card) {
+                        return {
+                           id: card.id,
+                           val: card.val,
+                           x: card.x / _this.public_w,
+                           y: card.y / _this.public_h
+                        };
+                     }));
+                     break;
+               }
                requestAnimationFrame(function () {
                   _this.paint();
                   _this.event.canvas.dragImageBuffer = null;
@@ -124,7 +187,8 @@
             },
             drag: function (evt) {
                // drag start -> mousemove
-               var selected = _this._select(evt.offsetX, evt.offsetY);
+               var cur = polyfillOffset(evt);
+               var selected = _this._select(cur.x, cur.y);
                if (!selected) {
                   _this.event.canvas.selected = [];
                } else if (_this.event.canvas.selected.indexOf(selected) < 0) {
@@ -140,13 +204,13 @@
                   _this.event.canvas.dragStableObject = true;
                }
                if (!_this.event.canvas.dragStableObject) {
-                  var objs = _this._selectArea(evt.offsetX, evt.offsetY);
+                  var objs = _this._selectArea(cur.x, cur.y);
                   _this.event.canvas.selected.forEach(function (selected) {
                      var index = objs.indexOf(selected);
                      objs.splice(index, 1);
                   });
-                  _this.event.canvas.dragOffset.px = evt.offsetX;
-                  _this.event.canvas.dragOffset.py = evt.offsetY;
+                  _this.event.canvas.dragOffset.px = cur.x;
+                  _this.event.canvas.dragOffset.py = cur.y;
                }
                requestAnimationFrame(function () {
                   _this.paint();
@@ -154,9 +218,10 @@
                });
             },
             click: function (evt) {
-               var selected = _this._select(evt.offsetX, evt.offsetY);
+               var cur = polyfillOffset(evt);
+               var selected = _this._select(cur.x, cur.y);
                if (selected) {
-                  var objs = _this._selectArea(evt.offsetX, evt.offsetY);
+                  var objs = _this._selectArea(cur.x, cur.y);
                   var index = objs.indexOf(selected);
                   objs.splice(index, 1);
                   objs.push(selected);
@@ -169,7 +234,8 @@
                });
             },
             doubleClick: function (evt) {
-               var selected = _this._select(evt.offsetX, evt.offsetY);
+               var cur = polyfillOffset(evt);
+               var selected = _this._select(cur.x, cur.y);
                if (!selected) {
                   _this.event.canvas.selected = [];
                   requestAnimationFrame(function () {
@@ -177,7 +243,7 @@
                   });
                   return;
                }
-               var objs = _this._selectArea(evt.offsetX, evt.offsetY);
+               var objs = _this._selectArea(cur.x, cur.y);
                var group = [{ index: objs.indexOf(selected), elem: selected }];
                if (objs === _this.visualObjs.private) {
                   objs = objs.slice();
@@ -207,7 +273,6 @@
                requestAnimationFrame(function () {
                   _this.paint();
                });
-console.log(group);
             },
             mouseDown: function (evt) {
                if (_this.event.canvas.mouseUpTimer) {
@@ -226,7 +291,6 @@ console.log(group);
                   _this.event.canvas.mouseClickCount ++;
                   _this.event.canvas.mouseUpTimer = setTimeout(function () {
                      _this.event.canvas.mouseUpTimer = null;
-console.log('comboclick', _this.event.canvas.mouseClickCount);
                      if (_this.event.canvas.mouseClickCount === 1) {
                         // click
                         _this.event.canvas.click(evt);
@@ -241,6 +305,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                }
             },
             mouseMove: function (evt) {
+               var cur = polyfillOffset(evt);
                // dragmove + evt.button === 1
                if (evt.which === 1) {
                   // drag move
@@ -251,15 +316,17 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                      requestAnimationFrame(function () {
                         if (!selected || !selected.length) return;
                         _this.pen.clearRect(0, 0, _this.w, _this.h);
-                        _this.pen.drawImage(_this.event.canvas.dragImageBuffer, 0, 0);
+                        if (_this.event.canvas.dragImageBuffer) {
+                           _this.pen.drawImage(_this.event.canvas.dragImageBuffer, 0, 0);
+                        }
                         _this.pen.save();
                         if (selected[0].area === 'private') {
                            _this.pen.translate(0, _this.public_h);
                         }
                         selected.reverse().forEach(function (one) {
                            var x = one.x, y = one.y;
-                           one.y += evt.offsetY - _this.event.canvas.dragOffset.py;
-                           one.x += evt.offsetX - _this.event.canvas.dragOffset.px;
+                           one.y += cur.y - _this.event.canvas.dragOffset.py;
+                           one.x += cur.x - _this.event.canvas.dragOffset.px;
                            _this._paintElement(one);
                            one.y = y; one.x = x;
                         });
@@ -270,6 +337,14 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
             },
             mouseLeave: function (evt) {
                // drop + evt.button === 1
+            },
+            touchMove: function (evt) {
+               var mevt = {
+                  which: 1,
+                  clientX: evt.touches[0].clientX,
+                  clientY: evt.touches[0].clientY
+               };
+               _this.event.canvas.mouseMove(mevt);
             }
          } // canvas
       };
@@ -277,6 +352,122 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
       canvas.addEventListener('mouseup', this.event.canvas.mouseUp);
       canvas.addEventListener('mousemove', this.event.canvas.mouseMove);
       canvas.addEventListener('mouseleave', this.event.canvas.mouseLeave);
+      // canvas.addEventListener('touchmove', this.event.canvas.touchMove);
+
+      var ui = {
+         _flag: {
+            started: false,
+            p: [false, false, false, false]
+         },
+         refresh: function () {
+            if (ui._flag.started) {
+               ui.btn.start.style.backgroundColor = '#99ff99';
+            } else {
+               ui.btn.start.style.backgroundColor = '#dddddd';
+            }
+            ui.btn.shuffle.style.backgroundColor = '#dddddd';
+            if (ui._flag.p[0]) {
+               ui.btn.p0.style.backgroundColor = '#99ff99';
+            } else {
+               ui.btn.p0.style.backgroundColor = '#dddddd';
+            }
+            if (ui._flag.p[1]) {
+               ui.btn.p1.style.backgroundColor = '#99ff99';
+            } else {
+               ui.btn.p1.style.backgroundColor = '#dddddd';
+            }
+            if (ui._flag.p[2]) {
+               ui.btn.p2.style.backgroundColor = '#99ff99';
+            } else {
+               ui.btn.p2.style.backgroundColor = '#dddddd';
+            }
+            if (ui._flag.p[3]) {
+               ui.btn.p3.style.backgroundColor = '#99ff99';
+            } else {
+               ui.btn.p3.style.backgroundColor = '#dddddd';
+            }
+         },
+         control: document.createElement('div'),
+         btn: {
+            start: document.createElement('button'),
+            shuffle: document.createElement('button'),
+            p0: document.createElement('button'),
+            p1: document.createElement('button'),
+            p2: document.createElement('button'),
+            p3: document.createElement('button')
+         }
+      };
+      this._ui = ui;
+      ui.control.style.border = '1px solid black';
+      ui.control.style.position = 'fixed';
+      ui.control.style.top = '96px';
+      ui.control.style.left = '640px';
+      ui.control.style.width = '120px';
+      ui.control.style.height = '200px';
+      ui.control.style.padding = '5px';
+      ui.btn.start.innerHTML = 'Start';
+      ui.btn.start.style.width = '100%';
+      ui.btn.shuffle.innerHTML = 'Shuffle';
+      ui.btn.shuffle.style.width = '100%';
+      ui.btn.p0.innerHTML = 'A';
+      ui.btn.p1.innerHTML = 'B';
+      ui.btn.p2.innerHTML = 'C';
+      ui.btn.p3.innerHTML = 'D';
+      ui.btn.p0.style.position = 'absolute';
+      ui.btn.p1.style.position = 'absolute';
+      ui.btn.p2.style.position = 'absolute';
+      ui.btn.p3.style.position = 'absolute';
+      ui.btn.p0.style.top = '150px';
+      ui.btn.p0.style.left = '40px';
+      ui.btn.p1.style.top = '120px';
+      ui.btn.p1.style.left = '70px';
+      ui.btn.p2.style.top = '90px';
+      ui.btn.p2.style.left = '40px';
+      ui.btn.p3.style.top = '120px';
+      ui.btn.p3.style.left = '10px';
+      ui.btn.p0.setAttribute('data-id', '0');
+      ui.btn.p1.setAttribute('data-id', '1');
+      ui.btn.p2.setAttribute('data-id', '2');
+      ui.btn.p3.setAttribute('data-id', '3');
+      var tmp = document.createElement('div');
+      tmp.appendChild(ui.btn.start); ui.control.appendChild(tmp);
+      tmp = document.createElement('div');
+      tmp.appendChild(ui.btn.shuffle); ui.control.appendChild(tmp);
+      ui.control.appendChild(document.createTextNode('Seats:'))
+      tmp = document.createElement('div');
+      tmp.appendChild(ui.btn.p0);
+      tmp.appendChild(ui.btn.p1);
+      tmp.appendChild(ui.btn.p2);
+      tmp.appendChild(ui.btn.p3);
+      ui.control.appendChild(tmp);
+      ui.refresh();
+      this.dom.appendChild(ui.control);
+      this.uiEvent = {
+         click: {
+            btnStart: function () {
+               _this.wsIsPokeStarted().then(function (is_started) {
+                  if (is_started) return;
+                  _this.wsPokeStart();
+               });
+            },
+            btnShffule: function () {
+               _this.wsPokeShuffle();
+            },
+            btnPx: function (evt) {
+               var id = parseInt(evt.target.getAttribute('data-id'));
+               _this.wsPokeToggleUser(id);
+            }
+         } // click
+      };
+      ui.btn.start.addEventListener('click', this.uiEvent.click.btnStart);
+      ui.btn.shuffle.addEventListener('click', this.uiEvent.click.btnShffule);
+      ui.btn.p0.addEventListener('click', this.uiEvent.click.btnPx);
+      ui.btn.p1.addEventListener('click', this.uiEvent.click.btnPx);
+      ui.btn.p2.addEventListener('click', this.uiEvent.click.btnPx);
+      ui.btn.p3.addEventListener('click', this.uiEvent.click.btnPx);
+      this.wsIsPokeStarted().then(function (isStarted) {
+         if (isStarted) _this.wsPokeSync();
+      });
    }
    BogaPokeGame.prototype = {
       _to_img: function (canvas) {
@@ -458,33 +649,6 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
       paint: function () {
          this.pen.clearRect(0, 0, this.w, this.h);
 
-         if (!this.visualObjs.public.length) {
-            var card_keys = Object.keys(this.imageBuf);
-            for (var i = 0; i < 5; i++) {
-               this.visualObjs.public.push({
-                  type: 'card',
-                  layer: ~~(Math.random() * 3),
-                  val: this._random_pick(card_keys),
-                  x: ~~(Math.random() * (this.w - 30)),
-                  y: ~~(Math.random() * (this.h*0.8 - 40)),
-                  w: 30, h: 40, area: 'public'
-               });
-            }
-         }
-         if (!this.visualObjs.private.length) {
-            var card_keys = Object.keys(this.imageBuf);
-            for (var i = 0; i < 27; i++) {
-               this.visualObjs.private.push({
-                  type: 'card',
-                  layer: ~~(Math.random() * 3),
-                  val: this._random_pick(card_keys),
-                  x: ~~(Math.random() * (this.w - 30)),
-                  y: ~~(Math.random() * (this.h*0.2 - 40)),
-                  w: 30, h: 40, area: 'private'
-               });
-            }
-         }
-
          this._paintPublic();
          this._paintPrivate();
          this.pen.strokeStyle = 'black';
@@ -533,7 +697,216 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                break;
          }
          this.pen.restore();
-      }
+      },
+      _rotateCards: function(cards, index) {
+         if (index <= 0) return;
+         if (index === 2) {
+            cards.forEach(function (card) {
+               var x = card.x, y = card.y;
+               card.x = 1 - x; card.y = 1 - y;
+            });
+            return;
+         }
+         if (index === 1) {
+            cards.forEach(function (card) {
+               var x = card.x, y = card.y;
+               card.x = 1 - y; card.y = x;
+            });
+            return;
+         }
+         if (index === 3) {
+            cards.forEach(function (card) {
+               var x = card.x, y = card.y;
+               card.x = y; card.y = 1 - x;
+            });
+            return;
+         }
+      },
+      processWebsocketMessage: function (obj) {
+         var _this = this;
+         if (!this._client.isOnline()) {
+            this.wsOffline();
+            return;
+         }
+         if (obj.action) {
+            switch (obj.action) {
+               case 'create':
+                  this._ui._flag.started = true;
+                  break;
+            }
+         }
+         if (obj.deck) {
+            if (obj.deck.players) {
+               this._ui._flag.p = obj.deck.players.map(function (player) {
+                  return player.username === env.user.username;
+               });
+            }
+            if (obj.deck.cards) {
+               obj.deck.cards && _this._rotateCards(obj.deck.cards, _this._ui._flag.p.indexOf(true));
+               this.visualObjs.public = obj.deck.cards && obj.deck.cards.map(function (card) {
+                  var r = {
+                     id: card.id,
+                     type: 'card',
+                     val: card.val,
+                     layer: 0, w: 30, h: 40,
+                     area: 'public',
+                     x: ~~(card.x * _this.public_w),
+                     y: ~~(card.y * _this.public_h)
+                  };
+                  if (r.x + r.w >= _this.public_w) r.x = _this.public_w - r.w;
+                  if (r.y + r.h >= _this.public_h) r.y = _this.public_h - r.h;
+                  return r;
+               }) || [];
+            }
+         }
+         if (obj.player) {
+            this.visualObjs.private = obj.player.cards && obj.player.cards.map(function (card) {
+               var r = {
+                  id: card.id,
+                  type: 'card',
+                  val: card.val,
+                  layer: 0, w: 30, h: 40,
+                  area: 'private',
+                  x: ~~(card.x * _this.private_w),
+                  y: ~~(card.y * _this.private_h)
+               };
+               if (r.x + r.w >= _this.private_w) r.x = _this.private_w - r.w;
+               if (r.y + r.h >= _this.private_h) r.y = _this.private_h - r.h;
+               return r;
+            }) || [];
+         } else if (!this._ui._flag.p.reduce(function (a, b) { return a || b; })) {
+            this.visualObjs.private = [];
+         }
+         this._ui.refresh();
+         requestAnimationFrame(function () {
+            _this.paint();
+         });
+      },
+      wsIsPokeStarted: function () {
+         var _this = this;
+         return new Promise(function (r, e) {
+            if (!_this._client.isOnline()) return r(false);
+            _this._client.request({
+               cmd: 'poke.check',
+               room: system.room
+            }, function (data) {
+               if (data.started) {
+                  _this._ui._flag.started = true;
+               } else {
+                  _this._ui._flag.started = false;
+               }
+               _this._ui.refresh();
+               return r(_this._ui._flag.started);
+            });
+         });
+      }, // wsIsPokeStarted
+      wsPokeStart: function () {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.create',
+               room: system.room
+            }, function (data) {});
+            r(true);
+         });
+      }, // wsPokeStart
+      wsOffline: function () {
+         this._ui._flag.started = false;
+         this._ui._flag.p = [false, false, false, false];
+         this._ui.refresh();
+      }, // wsOffline
+      wsPokeShuffle: function () {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.shuffle',
+               room: system.room
+            }, function (data) {});
+            r(true);
+         });
+      },
+      wsPokeToggleUser: function (id) {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            if (_this._ui._flag.p[id]) {
+               _this._client.request({
+                  cmd: 'poke.stand',
+                  room: system.room,
+                  index: id
+               }, function (data) {});
+            } else {
+               _this._client.request({
+                  cmd: 'poke.sit',
+                  room: system.room,
+                  index: id
+               }, function (data) {});
+            }
+            r(true);
+         });
+      }, // wsPokeToggleUser
+      wsPokeSync: function () {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.getplayer',
+               room: system.room
+            }, function (data) {});
+            r(true);
+         });
+      },
+      wsPokeMovePrivate: function (cards) {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.move.private',
+               room: system.room,
+               cards: cards
+            }, function (data) {});
+            r(true);
+         });
+      }, // wsPokeMovePrivate
+      wsPokeMovePublic: function (cards) {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.move.public',
+               room: system.room,
+               cards: cards
+            }, function (data) {});
+            r(true);
+         });
+      }, // wsPokeMovePrivate
+      wsPokePush: function (cards) {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.push',
+               room: system.room,
+               cards: cards
+            }, function (data) {});
+            r(true);
+         });
+      }, // wsPokeMovePrivate
+      wsPokePull: function (cards) {
+         if (!this._client.isOnline()) return Promise.resolve(false);
+         var _this = this;
+         return new Promise(function (r, e) {
+            _this._client.request({
+               cmd: 'poke.pull',
+               room: system.room,
+               cards: cards
+            }, function (data) {});
+            r(true);
+         });
+      }, // wsPokeMovePrivate
+      nop: function () {}
    };
 
    function BogaChat(id, filename) {
@@ -583,7 +956,6 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                   room: system.room,
                   message: _this.dom.input.value
                }, function (data) {
-                  console.log('ack', data);
                   _this.dom.input.classList.remove('disabled');
                   _this.dom.input.value = '';
                   _this.dom.input.focus();
@@ -595,6 +967,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
             offsetY: 0,
             mask: null,
             titleMouseDown: function (evt) {
+               var cur = polyfillOffset(evt);
                var mask = document.createElement('div');
                mask.style.position = 'fixed';
                mask.style.width = '100%';
@@ -605,14 +978,15 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
                mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
                mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
                _this.event.chatbox.mask = mask;
-               _this.event.chatbox.offsetX = evt.offsetX;
-               _this.event.chatbox.offsetY = evt.offsetY;
+               _this.event.chatbox.offsetX = cur.x;
+               _this.event.chatbox.offsetY = cur.y;
                _this.dom.self.appendChild(mask);
             },
             titleDrag: function (evt) {
+               var cur = polyfillOffset(evt);
                var fbox = _this.dom.fbox.self;
-               fbox.style.top = (evt.clientY - _this.event.chatbox.offsetY) + 'px';
-               fbox.style.left = (evt.clientX - _this.event.chatbox.offsetX) + 'px';
+               fbox.style.top = (cur.y - _this.event.chatbox.offsetY) + 'px';
+               fbox.style.left = (cur.x - _this.event.chatbox.offsetX) + 'px';
             },
             titleDrop: function (evt) {
                var mask = _this.event.chatbox.mask;
@@ -631,7 +1005,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
          return;
       }
 
-      new BogaPokeGame(system.bundle.client, this.dom.self);
+      this._poke = new BogaPokeGame(system.bundle.client, this.dom.self);
 
       this.dom.fbox.self.style.position = 'fixed';
       this.dom.fbox.self.style.backgroundColor = 'white';
@@ -666,6 +1040,7 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
             _this.dom.onlineMark.style.backgroundColor = '#99ff99';
          } else {
             _this.dom.onlineMark.style.backgroundColor = '#dddddd';
+            _this._poke && _this._poke.wsOffline();
          }
          if (status.speak) {
             _this.dom.chatSpeaker.style.backgroundColor = '#99ff99';
@@ -777,17 +1152,18 @@ console.log('comboclick', _this.event.canvas.mouseClickCount);
             cmd: 'chat.create',
             room: room
          }, function (data) {
-            console.log('ack.create', data);
             system.bundle.client.request({
                cmd: 'chat.enter',
                room: room
             }, function (data) {
-               console.log('ack.enter', data);
             });
          });
 
          system.bundle.client.onRoomMessage(function (obj) {
-            console.log('room', obj);
+            if (obj.poke) {
+               _this._poke.processWebsocketMessage(obj);
+               return;
+            }
             if (obj.audio) {
                if (_this.__audioP && obj.audio.from) {
                   obj.audio.data = new Blob(
