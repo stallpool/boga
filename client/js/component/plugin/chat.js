@@ -63,12 +63,14 @@
       }
    }
 
-   function BogaPokeGame(client, dom) {
+   function BogaPokeGame(client, dom, w, h) {
       this._client = client;
       this.dom = dom;
+      w = w || 640;
+      h = h || 640;
+      if (w > window.innerWidth) w = window.innerWidth;
 
       var canvas = document.createElement('canvas');
-      var w = 640, h = 640;
       this.w = w; this.h = h;
       this.public_w = w; this.public_h = 500;
       this.private_w = w; this.private_h = 140;
@@ -338,6 +340,14 @@
             mouseLeave: function (evt) {
                // drop + evt.button === 1
             },
+            touchStart: function (evt) {
+               var mevt = {
+                  which: 1,
+                  clientX: evt.touches[0].clientX,
+                  clientY: evt.touches[0].clientY
+               };
+               _this.event.canvas.mouseDown(mevt);
+            },
             touchMove: function (evt) {
                var mevt = {
                   which: 1,
@@ -345,6 +355,13 @@
                   clientY: evt.touches[0].clientY
                };
                _this.event.canvas.mouseMove(mevt);
+            },
+            touchEnd: function (evt) {
+               var mevt = {
+                  clientX: evt.touches[0].clientX,
+                  clientY: evt.touches[0].clientY
+               };
+               _this.event.canvas.mouseUp(mevt);
             }
          } // canvas
       };
@@ -352,7 +369,9 @@
       canvas.addEventListener('mouseup', this.event.canvas.mouseUp);
       canvas.addEventListener('mousemove', this.event.canvas.mouseMove);
       canvas.addEventListener('mouseleave', this.event.canvas.mouseLeave);
-      // canvas.addEventListener('touchmove', this.event.canvas.touchMove);
+      canvas.addEventListener('touchstart', this.event.canvas.touchStart);
+      canvas.addEventListener('touchmove', this.event.canvas.touchMove);
+      canvas.addEventListener('touchend', this.event.canvas.touchEnd);
 
       var ui = {
          _flag: {
@@ -401,7 +420,11 @@
       ui.control.style.border = '1px solid black';
       ui.control.style.position = 'fixed';
       ui.control.style.top = '96px';
-      ui.control.style.left = '640px';
+      if (window.innerWidth < 760) {
+         ui.control.style.left = (window.innerWidth - 120) + 'px';
+      } else {
+         ui.control.style.left = '640px';
+      }
       ui.control.style.width = '120px';
       ui.control.style.height = '200px';
       ui.control.style.padding = '5px';
@@ -967,7 +990,6 @@
             offsetY: 0,
             mask: null,
             titleMouseDown: function (evt) {
-               var cur = polyfillOffset(evt);
                var mask = document.createElement('div');
                mask.style.position = 'fixed';
                mask.style.width = '100%';
@@ -977,16 +999,17 @@
                mask.style.zIndex = 9000;
                mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
                mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
+               mask.addEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+               mask.addEventListener('touchend', _this.event.chatbox.titleTouchEnd);
                _this.event.chatbox.mask = mask;
-               _this.event.chatbox.offsetX = cur.x;
-               _this.event.chatbox.offsetY = cur.y;
+               _this.event.chatbox.offsetX = evt.offsetX;
+               _this.event.chatbox.offsetY = evt.offsetY;
                _this.dom.self.appendChild(mask);
             },
             titleDrag: function (evt) {
-               var cur = polyfillOffset(evt);
                var fbox = _this.dom.fbox.self;
-               fbox.style.top = (cur.y - _this.event.chatbox.offsetY) + 'px';
-               fbox.style.left = (cur.x - _this.event.chatbox.offsetX) + 'px';
+               fbox.style.top = (evt.offsetY - _this.event.chatbox.offsetY) + 'px';
+               fbox.style.left = (evt.offsetX - _this.event.chatbox.offsetX) + 'px';
             },
             titleDrop: function (evt) {
                var mask = _this.event.chatbox.mask;
@@ -995,7 +1018,28 @@
                _this.event.chatbox.offsetY = 0;
                mask.removeEventListener('mousemove', _this.event.chatbox.titleDrag);
                mask.removeEventListener('mouseup', _this.event.chatbox.titleDrop);
+               mask.removeEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+               mask.removeEventListener('touchend', _this.event.chatbox.titleTouchEnd);
                mask.parentNode.removeChild(mask);
+            },
+            titleTouchStart: function (evt) {
+               var fbox = _this.dom.fbox.self;
+               var mevt = {
+                  which: 1,
+                  offsetX: evt.touches[0].clientX - fbox.offsetLeft,
+                  offsetY: evt.touches[0].clientY - fbox.offsetTop
+               };
+               _this.event.chatbox.titleMouseDown(mevt);
+            },
+            titleTouchMove: function (evt) {
+               var mevt = {
+                  offsetX: evt.touches[0].clientX,
+                  offsetY: evt.touches[0].clientY
+               };
+               _this.event.chatbox.titleDrag(mevt);
+            },
+            titleTouchEnd: function (evt) {
+               _this.event.chatbox.titleDrop();
             }
          } // chatbox
       };
@@ -1017,6 +1061,7 @@
       this.dom.fbox.title.style.cursor = 'pointer';
       this.dom.fbox.title.innerHTML = 'ChatBox';
       this.dom.fbox.title.addEventListener('mousedown', this.event.chatbox.titleMouseDown);
+      this.dom.fbox.title.addEventListener('touchstart', this.event.chatbox.titleTouchStart);
       this.dom.fbox.self.appendChild(this.dom.fbox.title);
       this.dom.fbox.self.appendChild(this.dom.fbox.body);
       div.appendChild(this.dom.fbox.self);
@@ -1038,6 +1083,9 @@
       function updateUIByStatus() {
          if (status.online) {
             _this.dom.onlineMark.style.backgroundColor = '#99ff99';
+            _this._poke && _this._poke.wsIsPokeStarted().then(function (isStarted) {
+               _this._poke.wsPokeSync();
+            });
          } else {
             _this.dom.onlineMark.style.backgroundColor = '#dddddd';
             _this._poke && _this._poke.wsOffline();
