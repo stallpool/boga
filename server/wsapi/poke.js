@@ -136,6 +136,9 @@ class PokeDeck {
       cards.forEach((card) => {
          let mapcard = map[card.id];
          if (!mapcard) return;
+         let index = player.cards.indexOf(mapcard);
+         player.cards.splice(index, 1);
+         player.cards.push(mapcard);
          mapcard.x = card.x;
          mapcard.y = card.y;
       });
@@ -151,6 +154,9 @@ class PokeDeck {
       cards && cards.forEach((card) => {
          let mapcard = map[card.id];
          if (!mapcard) return;
+         let index = this.deck.cards.indexOf(mapcard);
+         this.deck.cards.splice(index, 1);
+         this.deck.cards.push(mapcard);
          mapcard.x = card.x;
          mapcard.y = card.y;
       });
