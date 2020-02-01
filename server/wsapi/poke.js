@@ -77,7 +77,7 @@ class PokeDeck {
          case 3:
             cards.forEach((card) => {
                var x = card.x, y = card.y;
-               card.x = 1 - y; card.y = x;
+               card.x = 1 - y; card.y = 1 - x;
             });
             break;
          default: return null;
