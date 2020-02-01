@@ -5,6 +5,10 @@
       room: location.hash
    };
 
+   function isTouchScreen() {
+      return 'ontouchend' in document;
+   }
+
    function polyfillOffset(evt) {
       return {
          x: evt.clientX,
@@ -101,6 +105,7 @@
             mouseClickCount: 0,
             mouseDownTimer: null,
             mouseUpTimer: null,
+            touchCache: { x: 0, y: 0 },
             drop: function (evt) {
                var cur = polyfillOffset(evt);
                var selected = _this.event.canvas.selected.slice();
@@ -346,6 +351,8 @@
                   clientX: evt.touches[0].clientX,
                   clientY: evt.touches[0].clientY
                };
+               _this.event.canvas.touchCache.x = mevt.clientX;
+               _this.event.canvas.touchCache.y = mevt.clientY;
                _this.event.canvas.mouseDown(mevt);
             },
             touchMove: function (evt) {
@@ -354,24 +361,29 @@
                   clientX: evt.touches[0].clientX,
                   clientY: evt.touches[0].clientY
                };
+               _this.event.canvas.touchCache.x = mevt.clientX;
+               _this.event.canvas.touchCache.y = mevt.clientY;
                _this.event.canvas.mouseMove(mevt);
             },
             touchEnd: function (evt) {
                var mevt = {
-                  clientX: evt.touches[0].clientX,
-                  clientY: evt.touches[0].clientY
+                  clientX: _this.event.canvas.touchCache.x,
+                  clientY: _this.event.canvas.touchCache.y
                };
                _this.event.canvas.mouseUp(mevt);
             }
          } // canvas
       };
-      canvas.addEventListener('mousedown', this.event.canvas.mouseDown);
-      canvas.addEventListener('mouseup', this.event.canvas.mouseUp);
-      canvas.addEventListener('mousemove', this.event.canvas.mouseMove);
-      canvas.addEventListener('mouseleave', this.event.canvas.mouseLeave);
-      canvas.addEventListener('touchstart', this.event.canvas.touchStart);
-      canvas.addEventListener('touchmove', this.event.canvas.touchMove);
-      canvas.addEventListener('touchend', this.event.canvas.touchEnd);
+      if (isTouchScreen()) {
+         canvas.addEventListener('touchstart', this.event.canvas.touchStart);
+         canvas.addEventListener('touchmove', this.event.canvas.touchMove);
+         canvas.addEventListener('touchend', this.event.canvas.touchEnd);
+      } else {
+         canvas.addEventListener('mousedown', this.event.canvas.mouseDown);
+         canvas.addEventListener('mouseup', this.event.canvas.mouseUp);
+         canvas.addEventListener('mousemove', this.event.canvas.mouseMove);
+         canvas.addEventListener('mouseleave', this.event.canvas.mouseLeave);
+      }
 
       var ui = {
          _flag: {
@@ -997,10 +1009,13 @@
                mask.style.top = '0px';
                mask.style.left = '0px';
                mask.style.zIndex = 9000;
-               mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
-               mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
-               mask.addEventListener('touchmove', _this.event.chatbox.titleTouchMove);
-               mask.addEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+               if (isTouchScreen()) {
+                  mask.addEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+                  mask.addEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+               } else {
+                  mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
+                  mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
+               }
                _this.event.chatbox.mask = mask;
                _this.event.chatbox.offsetX = evt.offsetX;
                _this.event.chatbox.offsetY = evt.offsetY;
@@ -1016,10 +1031,13 @@
                _this.event.chatbox.mask = null;
                _this.event.chatbox.offsetX = 0;
                _this.event.chatbox.offsetY = 0;
-               mask.removeEventListener('mousemove', _this.event.chatbox.titleDrag);
-               mask.removeEventListener('mouseup', _this.event.chatbox.titleDrop);
-               mask.removeEventListener('touchmove', _this.event.chatbox.titleTouchMove);
-               mask.removeEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+               if (isTouchScreen()) {
+                  mask.removeEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+                  mask.removeEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+               } else {
+                  mask.removeEventListener('mousemove', _this.event.chatbox.titleDrag);
+                  mask.removeEventListener('mouseup', _this.event.chatbox.titleDrop);
+               }
                mask.parentNode.removeChild(mask);
             },
             titleTouchStart: function (evt) {
