@@ -87,7 +87,8 @@
       this.dom.appendChild(canvas);
       this.visualObjs = {
          public: [],
-         private: []
+         private: [],
+         static: []
       };
       this.imageBuf = {};
       this.makeElementBuffer();
@@ -698,6 +699,7 @@
          this.pen.fillStyle = 'white';
          this.pen.fillRect(0, 0, this.public_w, this.public_h);
          this.pen.rect(0, 0, this.public_w, this.public_h);
+         this._paintStatic();
          public_objs.forEach(function (obj) {
             _this._paintElement(obj);
          });
@@ -714,6 +716,22 @@
          this.pen.rect(0, 0, this.private_w, this.private_h);
          private_objs.forEach(function (obj) {
             _this._paintElement(obj);
+         });
+         this.pen.restore();
+      },
+      _paintStatic: function () {
+         var _this = this;
+         var static_objs = this.visualObjs.static;
+         this.pen.save();
+         this.pen.fillStyle = 'green';
+         static_objs.forEach(function (obj) {
+            var rect = _this.pen.measureText(obj.text);
+            var x = obj.x * _this.public_w, y = obj.y * _this.public_h;
+            if (x - rect.width/2 - 1 < 0) x = rect.width/2 + 1;
+            if (x + rect.width + 1 > _this.public_w) x = _this.public_w - rect.width - 1;
+            if (y - 18 < 0) y = 18;
+            if (y + 9 > _this.public_h) y = _this.public_h - 9;
+            _this.pen.fillText(obj.text, x, y);
          });
          this.pen.restore();
       },
@@ -775,6 +793,26 @@
                this._ui._flag.p = obj.deck.players.map(function (player) {
                   return player.username === env.user.username;
                });
+
+               this.visualObjs.static = [];
+               var text, player_obj;
+               player_obj = obj.deck.players[0];
+               text = '( ' + player_obj.cardcount + ' )';
+               if (player_obj.username) text = player_obj.username + ': ' + text;
+               this.visualObjs.static.push({ type: 'text', text: text, x: 0.5, y: 1 });
+               player_obj = obj.deck.players[1];
+               text = '( ' + player_obj.cardcount + ' )';
+               if (player_obj.username) text = player_obj.username + ': ' + text;
+               this.visualObjs.static.push({ type: 'text', text: text, x: 1, y: 0.5 });
+               player_obj = obj.deck.players[2];
+               text = '( ' + player_obj.cardcount + ' )';
+               if (player_obj.username) text = player_obj.username + ': ' + text;
+               this.visualObjs.static.push({ type: 'text', text: text, x: 0.5, y: 0 });
+               player_obj = obj.deck.players[3];
+               text = '( ' + player_obj.cardcount + ' )';
+               if (player_obj.username) text = player_obj.username + ': ' + text;
+               this.visualObjs.static.push({ type: 'text', text: text, x: 0, y: 0.5 });
+               this._rotateCards(this.visualObjs.static, this._ui._flag.p.indexOf(true));
             }
             if (obj.deck.cards) {
                obj.deck.cards && _this._rotateCards(obj.deck.cards, _this._ui._flag.p.indexOf(true));
