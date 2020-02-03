@@ -45,11 +45,12 @@
       this.dom = dom;
       var w = 640, h = 640;
       if (w > window.innerWidth) w = window.innerWidth;
+      if (h + 96 > window.innerHeight) h = window.innerHeight - 96;
    
       var canvas = document.createElement('canvas');
       this.w = w; this.h = h;
-      this.public_w = w; this.public_h = 500;
       this.private_w = w; this.private_h = 140;
+      this.public_w = w; this.public_h = h - this.private_h;
       canvas.style.width = w + 'px';
       canvas.style.height = h + 'px';
       canvas.width = w;
@@ -380,21 +381,29 @@
             ui.btn.shuffle.style.backgroundColor = '#dddddd';
             if (ui._flag.p[0]) {
                ui.btn.p0.style.backgroundColor = '#99ff99';
+            } else if (ui._flag.players && ui._flag.players[0].username) {
+               ui.btn.p0.style.backgroundColor = '#ffdddd';
             } else {
                ui.btn.p0.style.backgroundColor = '#dddddd';
             }
             if (ui._flag.p[1]) {
                ui.btn.p1.style.backgroundColor = '#99ff99';
+            } else if (ui._flag.players && ui._flag.players[1].username) {
+               ui.btn.p1.style.backgroundColor = '#ffdddd';
             } else {
                ui.btn.p1.style.backgroundColor = '#dddddd';
             }
             if (ui._flag.p[2]) {
                ui.btn.p2.style.backgroundColor = '#99ff99';
+            } else if (ui._flag.players && ui._flag.players[2].username) {
+               ui.btn.p2.style.backgroundColor = '#ffdddd';
             } else {
                ui.btn.p2.style.backgroundColor = '#dddddd';
             }
             if (ui._flag.p[3]) {
                ui.btn.p3.style.backgroundColor = '#99ff99';
+            } else if (ui._flag.players && ui._flag.players[3].username) {
+               ui.btn.p3.style.backgroundColor = '#ffdddd';
             } else {
                ui.btn.p3.style.backgroundColor = '#dddddd';
             }
@@ -413,11 +422,6 @@
       ui.control.style.border = '1px solid black';
       ui.control.style.position = 'fixed';
       ui.control.style.top = '96px';
-      if (window.innerWidth < 760) {
-         ui.control.style.left = (window.innerWidth - 120) + 'px';
-      } else {
-         ui.control.style.left = '640px';
-      }
       ui.control.style.display = 'none';
       ui.control.style.position = 'fixed';
       ui.control.style.backgroundColor = 'white';
@@ -778,7 +782,8 @@
          }
          if (obj.deck) {
             if (obj.deck.players) {
-               this._ui._flag.p = obj.deck.players.map(function (player) {
+               this._ui._flag.players = obj.deck.players;
+               this._ui._flag.p = obj.deck.players.map(function (player, i) {
                   return player.username === env.user.username;
                });
    
