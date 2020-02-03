@@ -223,15 +223,15 @@ const api = {
             room = rooms[m.room];
             if (!room) return 0;
             obj.poke = 'check';
-            obj.started = !!room._poke;
+            obj.started = !!room._boardgame;
             ws.send(JSON.stringify(obj));
             return 1;
          case 'poke.create':
             room = rooms[m.room];
             if (!room) return 0;
-            room._poke = new PokeDeck();
+            room._boardgame = new PokeDeck();
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'create';
             obj.id += '-deck';
             helper.broadcast(room, obj);
@@ -239,20 +239,20 @@ const api = {
          case 'poke.sit':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (player) {
                player.username = null;
             }
-            room._poke.setPlayer(m.index, env.username);
-            player = room._poke.getPlayerByUsername(env.username);
+            room._boardgame.setPlayer(m.index, env.username);
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (!player) return 0;
-            room._poke.collectPlayerInfo();
+            room._boardgame.collectPlayerInfo();
             selfobj = Object.assign({}, obj);
             selfobj.poke = 'player';
             selfobj.player = player;
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'stand';
             obj.id += '-deck';
             ws.send(JSON.stringify(selfobj));
@@ -261,16 +261,16 @@ const api = {
          case 'poke.stand':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            room._poke.setPlayer(m.index, undefined);
-            player = room._poke.players[m.index];
+            if (!room._boardgame) return 0;
+            room._boardgame.setPlayer(m.index, undefined);
+            player = room._boardgame.players[m.index];
             if (!player) return 0;
-            room._poke.collectPlayerInfo();
+            room._boardgame.collectPlayerInfo();
             selfobj = Object.assign({}, obj);
             selfobj.poke = 'player';
             selfobj.player = null;
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'stand';
             obj.id += '-deck';
             ws.send(JSON.stringify(selfobj));
@@ -279,27 +279,27 @@ const api = {
          case 'poke.getplayer':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             obj.poke = 'player&deck';
             obj.player = player;
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             ws.send(JSON.stringify(obj));
             return 1;
          case 'poke.pull':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (!player) return 0;
             if (!Array.isArray(m.cards)) return 0;
-            room._poke.pullCards(env.username, m.cards);
-            room._poke.collectPlayerInfo();
+            room._boardgame.pullCards(env.username, m.cards);
+            room._boardgame.collectPlayerInfo();
             selfobj = Object.assign({}, obj);
             selfobj.poke = 'player';
             selfobj.player = player;
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'pull';
             obj.id += '-deck';
             ws.send(JSON.stringify(selfobj));
@@ -308,17 +308,17 @@ const api = {
          case 'poke.push':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (!player) return 0;
             if (!Array.isArray(m.cards)) return 0;
-            room._poke.pushCards(env.username, m.cards);
-            room._poke.collectPlayerInfo();
+            room._boardgame.pushCards(env.username, m.cards);
+            room._boardgame.collectPlayerInfo();
             selfobj = Object.assign({}, obj);
             selfobj.poke = 'player';
             selfobj.player = player;
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'push';
             obj.id += '-deck';
             ws.send(JSON.stringify(selfobj));
@@ -327,11 +327,11 @@ const api = {
          case 'poke.move.private':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (!player) return 0;
             if (!Array.isArray(m.cards)) return 0;
-            room._poke.moveCards(env.username, m.cards);
+            room._boardgame.moveCards(env.username, m.cards);
             obj.poke = 'player';
             obj.player = player;
             obj.action = 'move';
@@ -340,13 +340,13 @@ const api = {
          case 'poke.move.public':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            player = room._poke.getPlayerByUsername(env.username);
+            if (!room._boardgame) return 0;
+            player = room._boardgame.getPlayerByUsername(env.username);
             if (!player) return 0;
             if (!Array.isArray(m.cards)) return 0;
-            room._poke.moveCardOnDeck(env.username, m.cards);
+            room._boardgame.moveCardOnDeck(env.username, m.cards);
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'move';
             obj.id += '-deck';
             helper.broadcast(room, obj);
@@ -354,10 +354,10 @@ const api = {
          case 'poke.shuffle':
             room = rooms[m.room];
             if (!room) return 0;
-            if (!room._poke) return 0;
-            room._poke.shuffle(m.poketype || 'guandan');
-            room._poke.collectPlayerInfo();
-            room._poke.players.forEach((player) => {
+            if (!room._boardgame) return 0;
+            room._boardgame.shuffle(m.poketype || 'guandan');
+            room._boardgame.collectPlayerInfo();
+            room._boardgame.players.forEach((player) => {
                let user_obj = room.clients[player.username];
                if (!user_obj) return;
                if (!user_obj.ws) return;
@@ -368,7 +368,7 @@ const api = {
                user_obj.ws.send(JSON.stringify(selfobj));
             });
             obj.poke = 'deck';
-            obj.deck = room._poke.deck;
+            obj.deck = room._boardgame.deck;
             obj.action = 'shuffle';
             obj.id += '-deck';
             helper.broadcast(room, obj);

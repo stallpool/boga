@@ -1,4 +1,20 @@
 const i_logger = require('../logger');
+const i_path = require('path');
+const i_fs = require('fs');
+
+function getBoardGameList() {
+   let map = {};
+   let base = i_path.join(__dirname, '..', '..', 'client', 'js', 'component', 'boardgame');
+   let file_list = i_fs.readdirSync(base);
+   file_list.forEach((name) => {
+      if (i_path.extname(name) !== '.js') return;
+      let stat = i_fs.lstatSync(i_path.join(base, name));
+      if (!stat.isFile()) return;
+      map[name.substring(0, name.length-3)] = './js/component/boardgame/' + name;
+   });
+   return map;
+}
+const BOARD_GAME_LIST = getBoardGameList();
 
 const rooms = {
    // uuid: { clients: { username: { username, ws } } }
@@ -97,6 +113,25 @@ const api = {
                   return m.audio.from !== user_obj.username;
                });
             });
+            return 1;
+         case 'chat.boardgame':
+            room = rooms[m.room];
+            if (!room) return 0;
+            if (!room.clients) room.clients = [];
+            if (m.boardgame) {
+               room.boardgame = m.boardgame;
+               if (room._boardgame && room._boardgame.dispose) {
+                  room._boardgame.dispose();
+               }
+               room._boardgame = null;
+               obj.set_boardgame = room.boardgame;
+               obj.list = BOARD_GAME_LIST;
+               helper.broadcast(room, obj);
+            } else {
+               obj.boardgame = room.boardgame;
+               obj.list = BOARD_GAME_LIST;
+               ws.send(JSON.stringify(obj));
+            }
             return 1;
       }
    },
