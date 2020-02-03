@@ -69,6 +69,7 @@
          fbox: {
             self: document.createElement('div'),
             title: document.createElement('div'),
+            fold: document.createElement('button'),
             body: document.createElement('div')
          },
 
@@ -119,7 +120,20 @@
             offsetX: 0,
             offsetY: 0,
             mask: null,
+            folded: false,
+            foldClick: function (evt) {
+               if (_this.event.chatbox.folded) {
+                  evt.target.innerHTML = '-';
+                  _this.dom.fbox.body.style.display = 'block';
+               } else {
+                  evt.target.innerHTML = '+';
+                  _this.dom.fbox.body.style.display = 'none';
+                  _this.dom.fbox.self.style.top = '60px';
+               }
+               _this.event.chatbox.folded = !_this.event.chatbox.folded;
+            },
             titleMouseDown: function (evt) {
+               if (evt.target.tagName.toLowerCase() !== 'div') return;
                var mask = document.createElement('div');
                mask.style.position = 'fixed';
                mask.style.width = '100%';
@@ -128,8 +142,8 @@
                mask.style.left = '0px';
                mask.style.zIndex = 9000;
                if (isTouchScreen()) {
-                  mask.addEventListener('touchmove', _this.event.chatbox.titleTouchMove);
-                  mask.addEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+                  document.body.addEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+                  document.body.addEventListener('touchend', _this.event.chatbox.titleTouchEnd);
                } else {
                   mask.addEventListener('mousemove', _this.event.chatbox.titleDrag);
                   mask.addEventListener('mouseup', _this.event.chatbox.titleDrop);
@@ -150,8 +164,8 @@
                _this.event.chatbox.offsetX = 0;
                _this.event.chatbox.offsetY = 0;
                if (isTouchScreen()) {
-                  mask.removeEventListener('touchmove', _this.event.chatbox.titleTouchMove);
-                  mask.removeEventListener('touchend', _this.event.chatbox.titleTouchEnd);
+                  document.body.removeEventListener('touchmove', _this.event.chatbox.titleTouchMove);
+                  document.body.removeEventListener('touchend', _this.event.chatbox.titleTouchEnd);
                } else {
                   mask.removeEventListener('mousemove', _this.event.chatbox.titleDrag);
                   mask.removeEventListener('mouseup', _this.event.chatbox.titleDrop);
@@ -161,6 +175,7 @@
             titleTouchStart: function (evt) {
                var fbox = _this.dom.fbox.self;
                var mevt = {
+                  target: evt.target,
                   which: 1,
                   offsetX: evt.touches[0].clientX - fbox.offsetLeft,
                   offsetY: evt.touches[0].clientY - fbox.offsetTop
@@ -245,9 +260,19 @@
       this.dom.fbox.self.style.border = '1px solid black';
       this.dom.fbox.self.style.padding = '2px';
       this.dom.fbox.title.style.cursor = 'pointer';
-      this.dom.fbox.title.innerHTML = 'ChatBox';
-      this.dom.fbox.title.addEventListener('mousedown', this.event.chatbox.titleMouseDown);
-      this.dom.fbox.title.addEventListener('touchstart', this.event.chatbox.titleTouchStart);
+      this.dom.fbox.title.style.marginBottom = '3px';
+      this.dom.fbox.fold.style.border = '1px solid black';
+      this.dom.fbox.fold.style.backgroundColor = '#eeeeee';
+      this.dom.fbox.fold.style.marginRight = '3px';
+      this.dom.fbox.fold.innerHTML = '-';
+      this.dom.fbox.title.appendChild(this.dom.fbox.fold);
+      this.dom.fbox.title.appendChild(document.createTextNode('ChatBox'));
+      if (isTouchScreen()) {
+         this.dom.fbox.title.addEventListener('touchstart', this.event.chatbox.titleTouchStart);
+      } else {
+         this.dom.fbox.title.addEventListener('mousedown', this.event.chatbox.titleMouseDown);
+      }
+      this.dom.fbox.fold.addEventListener('click', this.event.chatbox.foldClick);
       this.dom.fbox.self.appendChild(this.dom.fbox.title);
       this.dom.fbox.self.appendChild(this.dom.fbox.body);
       div.appendChild(this.dom.fbox.self);
@@ -446,7 +471,13 @@
          this.dom.self.style.display = 'none';
       },
       dispose: function () {
-         this.dom.fbox.title.removeEventListener('mousedown', this.event.chatbox.titleMouseDown);
+         if (isTouchScreen()) {
+            this.dom.fbox.title.removeEventListener('touchstart', this.event.chatbox.titleTouchStart);
+         } else {
+            this.dom.fbox.title.removeEventListener('mousedown', this.event.chatbox.titleMouseDown);
+         }
+         this.dom.fbox.fold.removeEventListener('click', this.event.chatbox.foldClick);
+         this.dom.roomSelect.removeEventListener('change', this.event.room.roomChange);
          this.dom.input.removeEventListener('keydown', this.event.chat.inputEnter);
          system.bundle.view.removeChild(this.dom.nav.dom.self);
       }
