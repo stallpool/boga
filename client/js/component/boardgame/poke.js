@@ -327,6 +327,7 @@
                actContextMenu(_this, evt);
             },
             touchStart: function (evt) {
+               evt.preventDefault();
                var mevt = {
                   which: 1,
                   clientX: evt.touches[0].clientX,
@@ -337,6 +338,7 @@
                _this.event.canvas.mouseDown(mevt);
             },
             touchMove: function (evt) {
+               evt.preventDefault();
                var mevt = {
                   which: 1,
                   clientX: evt.touches[0].clientX,
@@ -347,6 +349,7 @@
                _this.event.canvas.mouseMove(mevt);
             },
             touchEnd: function (evt) {
+               evt.preventDefault();
                var mevt = {
                   clientX: _this.event.canvas.touchCache.x,
                   clientY: _this.event.canvas.touchCache.y
