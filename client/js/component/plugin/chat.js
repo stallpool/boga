@@ -221,6 +221,7 @@
                      if (!window.boga.boardgame) return;
                      var name = Object.keys(window.boga.boardgame)[0];
                      var klass = window.boga.boardgame[name]();
+                     if (_this._boardgame) return;
                      _this._boardgame = new klass(system.bundle.client, system.room, _this.dom.self);
                      if (system.bundle.client.isOnline()) {
                         _this._boardgame.wsOnline();

@@ -12,6 +12,32 @@
       };
    }
 
+   function actContextMenu(_this, evt) {
+      var x = evt.clientX, y = evt.clientY;
+      _this._ui.control.style.left = x + 'px';
+      _this._ui.control.style.top = y + 'px';
+      _this._ui.control.style.display = 'block';
+      _this._ui.mask = document.createElement('div');
+      _this._ui.control.parentNode.appendChild(_this._ui.mask);
+      _this._ui.mask.style.position = 'fixed';
+      _this._ui.mask.style.zIndex = 2000;
+      _this._ui.mask.style.backgroundColor = 'white';
+      _this._ui.mask.style.opacity = 0.5;
+      _this._ui.mask.style.width = '100%';
+      _this._ui.mask.style.height = '100%';
+      _this._ui.mask.style.left = '0px';
+      _this._ui.mask.style.top = '0px';
+      _this._ui.control.style.zIndex = 2001;
+      _this._ui.mask.addEventListener('click', maskClick);
+
+      function maskClick() {
+         _this._ui.mask.removeEventListener('click', maskClick);
+         _this._ui.control.style.display = 'none';
+         _this._ui.control.parentNode.removeChild(_this._ui.mask);
+         _this._ui.mask = null;
+      }
+   }
+
    function BogaPokeGame(client, room, dom) {
       this._client = client;
       this._client.bindRoom(room);
@@ -195,6 +221,9 @@
                   requestAnimationFrame(function () {
                      _this.paint();
                   });
+                  if (isTouchScreen()) {
+                     actContextMenu(_this, evt);
+                  }
                   return;
                }
                var objs = _this._selectArea(cur.x, cur.y);
@@ -292,6 +321,10 @@
             mouseLeave: function (evt) {
                // drop + evt.button === 1
             },
+            contextMenu: function (evt) {
+               evt.preventDefault();
+               actContextMenu(_this, evt);
+            },
             touchStart: function (evt) {
                var mevt = {
                   which: 1,
@@ -326,6 +359,7 @@
          canvas.addEventListener('touchmove', this.event.canvas.touchMove);
          canvas.addEventListener('touchend', this.event.canvas.touchEnd);
       } else {
+         canvas.addEventListener('contextmenu', this.event.canvas.contextMenu);
          canvas.addEventListener('mousedown', this.event.canvas.mouseDown);
          canvas.addEventListener('mouseup', this.event.canvas.mouseUp);
          canvas.addEventListener('mousemove', this.event.canvas.mouseMove);
@@ -384,6 +418,9 @@
       } else {
          ui.control.style.left = '640px';
       }
+      ui.control.style.display = 'none';
+      ui.control.style.position = 'fixed';
+      ui.control.style.backgroundColor = 'white';
       ui.control.style.width = '120px';
       ui.control.style.height = '200px';
       ui.control.style.padding = '5px';
@@ -395,17 +432,21 @@
       ui.btn.p1.innerHTML = 'B';
       ui.btn.p2.innerHTML = 'C';
       ui.btn.p3.innerHTML = 'D';
-      ui.btn.p0.style.position = 'absolute';
-      ui.btn.p1.style.position = 'absolute';
-      ui.btn.p2.style.position = 'absolute';
-      ui.btn.p3.style.position = 'absolute';
-      ui.btn.p0.style.top = '150px';
+      ui.btn.p0.style.display = 'block';
+      ui.btn.p1.style.display = 'block';
+      ui.btn.p2.style.display = 'block';
+      ui.btn.p3.style.display = 'block';
+      ui.btn.p0.style.position = 'relative';
+      ui.btn.p1.style.position = 'relative';
+      ui.btn.p2.style.position = 'relative';
+      ui.btn.p3.style.position = 'relative';
+      ui.btn.p0.style.top = '61px';
       ui.btn.p0.style.left = '40px';
-      ui.btn.p1.style.top = '120px';
-      ui.btn.p1.style.left = '70px';
-      ui.btn.p2.style.top = '90px';
+      ui.btn.p1.style.top = '3px';
+      ui.btn.p1.style.left = '69px';
+      ui.btn.p2.style.top = '-55px';
       ui.btn.p2.style.left = '40px';
-      ui.btn.p3.style.top = '120px';
+      ui.btn.p3.style.top = '-55px';
       ui.btn.p3.style.left = '10px';
       ui.btn.p0.setAttribute('data-id', '0');
       ui.btn.p1.setAttribute('data-id', '1');
@@ -944,6 +985,7 @@
             this.canvas.removeEventListener('touchmove', this.event.canvas.touchMove);
             this.canvas.removeEventListener('touchend', this.event.canvas.touchEnd);
          } else {
+            this.canvas.removeEventListener('contextmenu', this.event.canvas.contextMenu);
             this.canvas.removeEventListener('mousedown', this.event.canvas.mouseDown);
             this.canvas.removeEventListener('mouseup', this.event.canvas.mouseUp);
             this.canvas.removeEventListener('mousemove', this.event.canvas.mouseMove);
