@@ -2,7 +2,12 @@
 
    var system = {
       bundle: null,
-      room: location.hash
+      room: location.hash,
+      textEmotion: {
+         dom: null,
+         queue: [],
+         busy: false
+      }
    };
 
    function isTouchScreen() {
@@ -58,6 +63,54 @@
             });
          });
       }
+   }
+
+   function bogaShowEmotion() {
+      if (!system.textEmotion.queue.length) return;
+      if (system.textEmotion.busy) return;
+      system.textEmotion.busy = true;
+      if (!system.textEmotion.dom) {
+         system.textEmotion.dom = document.createElement('div');
+         system.textEmotion.dom.style.position = 'fixed';
+      }
+      var obj = system.textEmotion.queue.shift();
+      if (obj) {
+         var tmp;
+         while (system.textEmotion.dom.children.length) {
+            system.textEmotion.dom.removeChild(system.textEmotion.dom.children[0]);
+         }
+         tmp = document.createElement('div');
+         tmp.appendChild(document.createTextNode(obj.from + ':'));
+         system.textEmotion.dom.appendChild(tmp);
+         tmp = document.createElement('div');
+         tmp.style.fontSize = '40px';
+         tmp.appendChild(document.createTextNode(obj.value));
+         system.textEmotion.dom.appendChild(tmp);
+         document.body.appendChild(system.textEmotion.dom);
+         system.textEmotion.dom.style.left = ((window.innerWidth - system.textEmotion.dom.offsetWidth) / 2) + 'px';
+         system.textEmotion.dom.style.top = ((window.innerHeight - system.textEmotion.dom.offsetHeight) / 2) + 'px';
+         setTimeout(function () {
+            document.body.removeChild(system.textEmotion.dom);
+            next();
+         }, 1000);
+      } else {
+         next();
+      }
+
+      function next() {
+         system.textEmotion.busy = false;
+         bogaShowEmotion();
+      }
+   }
+   function bogaEmotion(obj) {
+      switch(obj.emotion) {
+         case 'text':
+            return bogaTextEmotion(obj);
+      }
+   }
+   function bogaTextEmotion(obj) {
+      system.textEmotion.queue.push(obj);
+      bogaShowEmotion();
    }
 
    function BogaChat(id, filename) {
@@ -429,6 +482,10 @@
             if (obj.set_boardgame) {
                _this.dom.roomSelect.value = obj.set_boardgame;
                _this.event.room.roomSync();
+               return;
+            }
+            if (obj.emotion) {
+               bogaEmotion(obj);
                return;
             }
             if (obj.audio) {

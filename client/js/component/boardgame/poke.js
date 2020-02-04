@@ -14,9 +14,17 @@
 
    function actContextMenu(_this, evt) {
       var x = evt.clientX, y = evt.clientY;
+      _this._ui.control.style.display = 'block';
+      if (x + _this._ui.control.offsetWidth > window.innerWidth) {
+         x = window.innerWidth - _this._ui.control.offsetWidth;
+      }
+      if (y + _this._ui.control.offsetHeight > window.innerHeight) {
+         y = window.innerHeight - _this._ui.control.offsetHeight;
+      }
+      if (x < 0) x = 0;
+      if (y < 0) y = 0;
       _this._ui.control.style.left = x + 'px';
       _this._ui.control.style.top = y + 'px';
-      _this._ui.control.style.display = 'block';
       _this._ui.mask = document.createElement('div');
       _this._ui.control.parentNode.appendChild(_this._ui.mask);
       _this._ui.mask.style.position = 'fixed';
@@ -209,6 +217,14 @@
                   _this.event.canvas.selected = [selected];
                } else {
                   _this.event.canvas.selected = [];
+                  if (_this._ui._flag.active && cur.x < 32 && cur.x > 0 && cur.y > _this.public_h - 20 && cur.y < _this.public_h - 2) {
+                     _this._client.request({
+                        cmd: 'chat.emotion',
+                        room: _this._room,
+                        emotion: 'text',
+                        value: 'Pass'
+                     });
+                  }
                }
                requestAnimationFrame(function () {
                   _this.paint();
@@ -373,7 +389,8 @@
       var ui = {
          _flag: {
             started: false,
-            p: [false, false, false, false]
+            p: [false, false, false, false],
+            active: false
          },
          refresh: function () {
             if (ui._flag.started) {
@@ -719,6 +736,9 @@
          this.pen.save();
          this.pen.fillStyle = 'green';
          static_objs.forEach(function (obj) {
+            if (obj.type === 'button') {
+               return _this._paintElement(obj);
+            }
             var rect = _this.pen.measureText(obj.text);
             var x = obj.x * _this.public_w, y = obj.y * _this.public_h;
             if (x - rect.width/2 - 1 < 0) x = rect.width/2 + 1;
@@ -741,6 +761,10 @@
                   this.pen.fillStyle = 'rgba(255,255,255,0.5)';
                   this.pen.fillRect(0, 0, obj.w, obj.h);
                }
+               break;
+            case 'button':
+               this.pen.fillText(obj.text, 5, 12);
+               this.pen.rect(0, 0, 32, 18);
                break;
          }
          this.pen.restore();
@@ -809,6 +833,12 @@
                if (player_obj.username) text = player_obj.username + ': ' + text;
                this.visualObjs.static.push({ type: 'text', text: text, x: 0, y: 0.5 });
                this._rotateCards(this.visualObjs.static, this._ui._flag.p.indexOf(true));
+
+               var active_player = this._ui._flag.p.reduce(function (a, b) { return a || b; });
+               this._ui._flag.active = active_player;
+               if (active_player) {
+                  this.visualObjs.static.push({ type: 'button', text: 'Pass', x: 0, y: this.public_h - 20 });
+               }
             }
             if (obj.deck.cards) {
                obj.deck.cards && _this._rotateCards(obj.deck.cards, _this._ui._flag.p.indexOf(true));
@@ -839,6 +869,8 @@
                   x: ~~(card.x * _this.private_w),
                   y: ~~(card.y * _this.private_h)
                };
+               if (r.x < 0) r.x = 0;
+               if (r.y < 0) r.y = 0;
                if (r.x + r.w >= _this.private_w) r.x = _this.private_w - r.w;
                if (r.y + r.h >= _this.private_h) r.y = _this.private_h - r.h;
                return r;
