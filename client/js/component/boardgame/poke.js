@@ -639,7 +639,13 @@
             p.stroke();
             p.fillStyle = 'black';
             p.fillText(t[0][i], 5, 12);
-            p.fillText(t[0][0], 4, 24);
+            p.fillText(t[0][0], 4, 22);
+            p.save();
+            p.rotate(Math.PI);
+            p.translate(-w, -h);
+            p.fillText(t[0][i], 5, 12);
+            p.fillText(t[0][0], 4, 22);
+            p.restore();
             this.imageBuf['a' + i] = this._to_img(tc);
          }
          for (var i = 1; i < t[1].length; i++) {
@@ -651,7 +657,13 @@
             p.stroke();
             p.fillStyle = 'red';
             p.fillText(t[1][i], 5, 12);
-            p.fillText(t[1][0], 4, 24);
+            p.fillText(t[1][0], 4, 22);
+            p.save();
+            p.rotate(Math.PI);
+            p.translate(-w, -h);
+            p.fillText(t[1][i], 5, 12);
+            p.fillText(t[1][0], 4, 22);
+            p.restore();
             this.imageBuf['b' + i] = this._to_img(tc);
          }
          for (var i = 1; i < t[2].length; i++) {
@@ -663,7 +675,13 @@
             p.stroke();
             p.fillStyle = 'black';
             p.fillText(t[2][i], 5, 12);
-            p.fillText(t[2][0], 4, 24);
+            p.fillText(t[2][0], 4, 22);
+            p.save();
+            p.rotate(Math.PI);
+            p.translate(-w, -h);
+            p.fillText(t[2][i], 5, 12);
+            p.fillText(t[2][0], 4, 22);
+            p.restore();
             this.imageBuf['c' + i] = this._to_img(tc);
          }
          for (var i = 1; i < t[3].length; i++) {
@@ -675,7 +693,13 @@
             p.stroke();
             p.fillStyle = 'red';
             p.fillText(t[3][i], 5, 12);
-            p.fillText(t[3][0], 4, 24);
+            p.fillText(t[3][0], 4, 22);
+            p.save();
+            p.rotate(Math.PI);
+            p.translate(-w, -h);
+            p.fillText(t[3][i], 5, 12);
+            p.fillText(t[3][0], 4, 22);
+            p.restore();
             this.imageBuf['d' + i] = this._to_img(tc);
          }
          {
