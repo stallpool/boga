@@ -114,6 +114,20 @@ const api = {
                });
             });
             return 1;
+         case 'chat.emotion':
+            if (!m.value) return;
+            room = rooms[m.room];
+            if (!room) return 0;
+            if (!room.clients) room.clients = [];
+            obj.emotion = m.emotion || 'text';
+            switch (obj.emotion) {
+               case 'text':
+                  obj.value = m.value.substring && m.value.substring(0, 10);
+                  break;
+            }
+            obj.from = env.username;
+            helper.broadcast(room, obj);
+            return;
          case 'chat.boardgame':
             room = rooms[m.room];
             if (!room) return 0;
