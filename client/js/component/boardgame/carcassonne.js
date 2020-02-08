@@ -856,6 +856,9 @@
                this.pen.fillText(obj.text, 5, 12);
                this.pen.rect(0, 0, obj.w, obj.h);
                break;
+            case 'legend':
+               this.pen.fillStyle = obj.color;
+               this.pen.fillRect(0, 0, obj.w, obj.h);
             case 'text':
                rect = this.pen.measureText(obj.text);
                x = obj.x;
@@ -973,6 +976,13 @@
                area: 'private', layer: -1,
                stable: true,
                x: 10, y: 40, w: 50, h: 20
+            });
+            this.visualObjs.private.push({
+               type: 'legend',
+               color: obj.player.color,
+               area: 'private', layer: -1,
+               stable: true,
+               x: this.private_w - 20, y: 10, w: 15, h: 15
             });
             var index = 0, count = 7, basex;
             var workerUsed = [0, 0, 0, 0, 0, 0, 0];
