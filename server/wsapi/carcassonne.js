@@ -211,6 +211,7 @@ class CarcassonneDeck {
       if (!player) return;
       if (player.card) return;
       let card = player.privateCards.shift();
+      if (!card) return;
       card.x = 0.5;
       card.y = 0.5;
       card.rotation = ~~(Math.random() * 4);
