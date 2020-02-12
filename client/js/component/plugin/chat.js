@@ -287,9 +287,12 @@
 
                   window.boga.loadScript(roomObj).then(function () {
                      if (!window.boga.boardgame) return;
-                     var name = Object.keys(window.boga.boardgame)[0];
+                     var name = data.boardgame;
                      var klass = window.boga.boardgame[name]();
-                     if (_this._boardgame) return;
+                     if (_this._boardgame) {
+                        alert('A board game has been started; please choose `---` to stop it first.');
+                        return;
+                     }
                      _this._boardgame = new klass(system.bundle.client, system.room, _this.dom.self);
                      if (system.bundle.client.isOnline()) {
                         _this._boardgame.wsOnline();
