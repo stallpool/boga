@@ -6,7 +6,7 @@
 (function () {
 
 function bogaWsClientOnline(client, fn_list) {
-   if (!client._keeper) client._keep = setInterval(function () {
+   if (!client._keeper) client._keeper = setInterval(function () {
       client._client.send('{"ping":1}');
    }, 1000 * 20);
    client.online = true;
