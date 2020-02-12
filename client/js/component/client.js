@@ -6,6 +6,9 @@
 (function () {
 
 function bogaWsClientOnline(client, fn_list) {
+   if (!client._keeper) client._keep = setInterval(function () {
+      client._client.send('{"ping":1}');
+   }, 1000 * 20);
    client.online = true;
    fn_list.forEach(function (fn) {
       fn && fn(client);
@@ -103,11 +106,13 @@ function BogaWsClient(url, room) {
       }
    };
    this._client = null;
+   this._keeper = null;
    this.connect();
 }
 BogaWsClient.prototype = {
    _cleanup: function () {
       this.online = false;
+      if (this._keeper) clearInterval(this._keeper);
       this._client.removeEventListener('open', this.event.open);
       this._client.removeEventListener('close', this.event.close);
       this._client.removeEventListener('error', this.event.error);
