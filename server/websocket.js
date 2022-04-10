@@ -43,6 +43,14 @@ const service = {
          i_path.resolve(i_path.dirname(process.argv[1])),
          'wsapi'
       ));
+      Object.values(i_env.config.extra_game).forEach((extra_game) => {
+         const plugin = extra_game.load();
+         plugin.forEach((mod) => {
+            service.register(mod.process);
+            count ++;
+            i_logger.log(`[plugin] ${mod.__filename__}`);
+         });
+      });
       i_logger.log(`[plugin: count=${count}]`);
 
       function load_builtin_plugins(base) {
@@ -65,7 +73,6 @@ const service = {
             i_logger.log(`[plugin] ${filename}`);
          });
       }
-
    },
    register: (fn) => {
       if (system.processor.indexOf(fn) >= 0) return false;

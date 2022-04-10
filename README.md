@@ -20,3 +20,20 @@ echo password > local/auth/user1
 # visit https://127.0.0.1/#roomname
 # if do not specify room name, audio control will hide
 ```
+
+### Extra Game
+
+`BOGA_EXTRA_GAME=/path/to/extra/game1:/path/to/extra/game2:...`
+
+```
++ extra-game
+|--- config.json { "name": "..." }
+|--- + wsapi
+|    |--- xxx.js (initialize(), process(ws, m, env))
+|
+|--- + static        --[mount]--> /extra/name
+     |--- index.js              > /extra/name/index.js (window.boga.boardgame[name] = () => klass)
+     |--- img                   > /extra/name/img
+
+e.g. sample_extra_game
+```

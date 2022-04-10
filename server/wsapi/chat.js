@@ -1,3 +1,4 @@
+const i_env = require('../env');
 const i_logger = require('../logger');
 const i_path = require('path');
 const i_fs = require('fs');
@@ -12,6 +13,11 @@ function getBoardGameList() {
       if (!stat.isFile()) return;
       map[name.substring(0, name.length-3)] = './js/component/boardgame/' + name;
    });
+
+   Object.keys(i_env.config.extra_game).forEach((name) => {
+      map[name] = `/_eg_/${name}/index.js`
+   });
+
    return map;
 }
 const BOARD_GAME_LIST = getBoardGameList();

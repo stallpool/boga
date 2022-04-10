@@ -66,7 +66,10 @@ const WebServer = {
             });
          }
       }
-      WebServer.debug.serve_static(
+
+      WebServer.debug.serve_extra(
+         res, origin_path
+      ) || WebServer.debug.serve_static(
          res, i_path.join(i_env.base, '..', 'client'), origin_path
       ) || router.code(req, res, 404, 'Not Found');
    },
@@ -84,6 +87,26 @@ const WebServer = {
          max_size: 128 * 1024 * 1024, /* 128 MB */
          size: 0,
          pool: null
+      },
+      serve_extra: (res, path) => {
+         // path = ['', '_eg_', '<name>', ...]
+         if (path[1] !== '_eg_') return false;
+         const name = path[2];
+         const eg = i_env.config.extra_game[name];
+         if (!eg) return false;
+         const egpath = path.slice(3).join('/');
+         const buf = eg.staticfile(egpath);
+         if (buf) {
+            const mimetype = Mime.lookup(egpath);
+            if (mimetype !== Mime._default) {
+               res.setHeader('Content-Type', mimetype);
+            }
+            res.write(buf);
+         } else {
+            res.writeHead(code || 404, text || '');
+         }
+         res.end();
+         return true;
       },
       serve_static: (res, base, path) => {
          if (!i_env.debug) return false;
