@@ -12,6 +12,13 @@ const env = {
       filename: process.env.BOGA_KEYVAL_FILENAME || null
    },
    admins: process.env.BOGA_ADMINS?process.env.BOGA_ADMINS.split(','):[],
+   config: {
+      max_user: parseInt(process.env.BOGA_MAX_USER || '10'),
+      // define extra game to make sure we can have multiple repos
+      // for example we build some game in private repo and it can
+      // be loaded in boga
+      extra_game: process.env.BOGA_EXTRA_GAME?process.env.BOGA_EXTRA_GAME.split(':'):[],
+   },
 };
 
 module.exports = env;

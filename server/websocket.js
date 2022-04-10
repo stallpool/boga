@@ -2,11 +2,13 @@ const i_fs = require('fs');
 const i_path = require('path');
 
 const i_ws = require('ws');
+const i_env = require('./env');
 const i_auth = require('./auth');
 const i_logger = require('./logger');
 
 const system = {
    processor: [],
+   userlimit: {},
 };
 
 function process_cmd(ws, m, env, type) {
@@ -36,30 +38,34 @@ const service = {
    },
    init_plugins: () => {
       i_logger.log('initialize plugins ...');
-      let base = i_path.join(
+      let count = 0;
+      load_builtin_plugins(i_path.join(
          i_path.resolve(i_path.dirname(process.argv[1])),
          'wsapi'
-      );
-      let files = i_fs.readdirSync(base);
-      let count = 0;
-      files.forEach((x) => {
-         let filename = i_path.join(base, x);
-         let stat = i_fs.statSync(filename);
-         if (!stat.isFile()) return;
-         let extname = i_path.extname(x);
-         if (extname !== '.js') return;
-         x = x.substring(0, x.length - extname.length);
-         let plugin = require('./wsapi/' + x);
-         if (!plugin.process) {
-            delete require.cache[require.resolve(filename)];
-            return;
-         }
-         if (plugin.initialize) plugin.initialize();
-         service.register(plugin.process);
-         count ++;
-         i_logger.log(`[plugin] ${filename}`);
-      });
+      ));
       i_logger.log(`[plugin: count=${count}]`);
+
+      function load_builtin_plugins(base) {
+         let files = i_fs.readdirSync(base);
+         files.forEach((x) => {
+            let filename = i_path.join(base, x);
+            let stat = i_fs.statSync(filename);
+            if (!stat.isFile()) return;
+            let extname = i_path.extname(x);
+            if (extname !== '.js') return;
+            x = x.substring(0, x.length - extname.length);
+            let plugin = require('./wsapi/' + x);
+            if (!plugin.process) {
+               delete require.cache[require.resolve(filename)];
+               return;
+            }
+            if (plugin.initialize) plugin.initialize();
+            service.register(plugin.process);
+            count ++;
+            i_logger.log(`[plugin] ${filename}`);
+         });
+      }
+
    },
    register: (fn) => {
       if (system.processor.indexOf(fn) >= 0) return false;
@@ -98,6 +104,16 @@ const service = {
                api.send_error(ws, 401, 'Not Authenticated');
                return;
             }
+            const n = Object.keys(system.userlimit).length;
+            if (n >= i_env.config.max_user) {
+               api.send_error(ws, 401, 'Too many users');
+               return;
+            }
+            if (system.userlimit[m.username]) {
+               api.send_error(ws, 401, 'Too many connections');
+               return;
+            }
+            system.userlimit[m.username] = true;
             env.authenticated = true;
             env.username = m.username;
             env.uuid = m.uuid;
@@ -111,10 +127,12 @@ const service = {
       });
       ws.on('close', () => {
          if (!env.authenticated) return;
+         delete system.userlimit[env.username];
          process_cmd(ws, {}, env, 'close');
       });
       ws.on('error', (error) => {
          if (!env.authenticated) return;
+         delete system.userlimit[env.username];
          process_cmd(ws, { error }, env, 'error');
       });
    }
