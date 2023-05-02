@@ -73,6 +73,8 @@ const env = {
    admins: process.env.BOGA_ADMINS?process.env.BOGA_ADMINS.split(','):[],
    config: {
       max_user: parseInt(process.env.BOGA_MAX_USER || '10'),
+      max_room: parseInt(process.env.BOGA_MAX_ROOM || '10'),
+      only_admin_can_create_room: !!process.env.BOGA_ONLY_ADMIN_CAN_CREATE_ROOM,
       // define extra game to make sure we can have multiple repos
       // for example we build some game in private repo and it can
       // be loaded in boga

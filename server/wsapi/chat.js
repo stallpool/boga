@@ -84,9 +84,26 @@ const api = {
       let obj = { id: m.id, room: m.room }, room;
       switch(m.cmd) {
          case 'chat.create':
-            // TODO: check admin
-            if (!rooms[m.room]) rooms[m.room] = {};
+            if (!rooms[m.room]) {
+               if (i_env.config.only_admin_can_create_room) {
+                  if (!i_env.admins.includes(env.username)) {
+                     ws.send(JSON.stringify({error: 'Unauthenticated', code: 401}));
+                     try { ws.close(); } catch(err) {}
+                     return 1;
+                  }
+               }
+               if (Object.keys(rooms).length >= i_env.config.max_room) {
+                  ws.send(JSON.stringify({error: 'Too many rooms', code: 401}));
+                  try { ws.close(); } catch(err) {}
+                  return 1;
+               }
+               rooms[m.room] = {};
+            }
             room = rooms[m.room];
+            if (!room) {
+               try { ws.close(); } catch(err) {}
+               return 1;
+            }
             helper.pushClient(room, env.username, ws);
             helper.broadcast(room, obj);
             return 1;
