@@ -63,6 +63,7 @@ const api = {
       Object.keys(rooms).forEach((id) => {
          let room = rooms[id];
          if (!room.clients) return;
+         if (!room.clients[env.username]) return;
          delete room.clients[env.username];
          let usernames = Object.keys(room.clients).filter((username) => {
             let user_obj = room.clients[username];
