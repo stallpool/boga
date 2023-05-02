@@ -13,6 +13,23 @@ var ui = {
 };
 
 (function init(){
+   var hash = window.location.hash;
+   if (!hash) return;
+   if (hash.indexOf('#/') === 0) return;
+   var param = {};
+   hash.substring(1).split('&').forEach(function (part) {
+      var parts = part.split('=');
+      var key = decodeURIComponent(parts[0] || '');
+      var val = decodeURIComponent(parts[1] || '');
+      param[key] = val;
+   });
+   ui.login.username.value = param.u;
+   ui.login.password.value = param.p;
+   if (param.u && param.p) {
+      location.hash = '#/' + Math.random();
+      return login();
+   }
+
    var cookie = get_cookie();
    if (cookie.boga_username) {
       ui.login.username.value = cookie.boga_username;
