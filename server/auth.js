@@ -1,9 +1,12 @@
+const i_path = require('path');
 const i_uuid = require('uuid');
 const i_keyval = require('./keyval');
 const i_env = require('./env');
+const i_fsutil = require('./share/file');
 
 const system = {
    otop_passpath: process.env.BOGA_PASS_DIR,
+   otop_oncecode: !!process.env.BOGA_PASS_ONCE,
 };
 
 const api = {
@@ -21,20 +24,23 @@ const api = {
       return meta;
    },
    authenticate_for_otop: async (username, password) => new Promise((resolve, reject) => {
-      const i_fs = require('fs');
-      const i_path = require('path');
-      let base = i_path.resolve(system.otop_passpath);
-      if (!i_fs.existsSync(base)) return reject({username, error: 'system not ready'});
-      let filename = i_path.join(base, username);
-      if (!i_fs.existsSync(filename)) return reject({username, error: 'auth failed'});
-      let stat = i_fs.statSync(filename);
-      if (!stat.isFile()) return reject({username, error: 'auth failed'});
-      let passphrase = i_fs.readFileSync(filename).toString().trim();
-      if (password === passphrase) {
-         resolve(keyval_setauth(username));
-      } else {
+      (async () => { try {
+         // XXX: security / still has race condition to allow auth for 2 parallel connections
+         if (!username || username.indexOf('..') >= 0) return reject({username, error: 'auth failed'});
+         const base = i_path.resolve(system.otop_passpath);
+         const filename = i_path.join(base, username);
+         const stat = await i_fsutil.stat(filename);
+         if (!stat.isFile()) return reject({username, error: 'auth failed'});
+         const passphrase = (await i_fsutil.readFile(filename)).toString().trim();
+         if (passphrase && password === passphrase) {
+            if (system.otop_oncecode) i_fsutil.origin.unlink(filename, () => {});
+            resolve(keyval_setauth(username));
+         } else {
+            reject({username, error: 'auth failed'});
+         }
+      } catch (err) {
          reject({username, error: 'auth failed'});
-      }
+      } })();
    }),
    clear: (username, uuid) => {
       return i_keyval.set(keyval_authkey(username, uuid));
