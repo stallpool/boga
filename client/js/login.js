@@ -25,8 +25,12 @@ var ui = {
    });
    ui.login.username.value = param.u;
    ui.login.password.value = param.p;
+   if (param.r) {
+      location.hash = '#' + param.r;
+   } else {
+      location.hash = '#';
+   }
    if (param.u && param.p) {
-      location.hash = '#/' + Math.random();
       return login();
    }
 

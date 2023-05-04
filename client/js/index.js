@@ -65,4 +65,4 @@ function ui_loaded() {
 }
 
 var env = {};
-login_and_start(env, before_app, init_app);
+login_and_start(env, before_app, init_app, 'login.html#r=' + location.href.split('/').slice(3).join('/').replace('#', ':'));
