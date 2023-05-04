@@ -106,27 +106,27 @@ const service = {
             api.send_error(ws, 400, 'Bad Request');
             return;
          }
-         if (m.cmd === 'auth') {
-            if (!i_auth.check_login(m.username, m.uuid)) {
-               api.send_error(ws, 401, 'Not Authenticated');
-               return;
-            }
-            const n = Object.keys(system.userlimit).length;
-            if (n >= i_env.config.max_user) {
-               api.send_error(ws, 401, 'Too many users');
-               return;
-            }
-            if (system.userlimit[m.username]) {
-               api.send_error(ws, 401, 'Too many connections');
-               return;
-            }
-            system.userlimit[m.username] = true;
-            env.authenticated = true;
-            env.username = m.username;
-            env.uuid = m.uuid;
-            return;
-         }
          if (!env.authenticated) {
+            if (m.cmd === 'auth') {
+               if (!i_auth.check_login(m.username, m.uuid)) {
+                  api.send_error(ws, 401, 'Not Authenticated');
+                  return;
+               }
+               const n = Object.keys(system.userlimit).length;
+               if (n >= i_env.config.max_user) {
+                  api.send_error(ws, 401, 'Too many users');
+                  return;
+               }
+               if (system.userlimit[m.username]) {
+                  api.send_error(ws, 401, 'Too many connections');
+                  return;
+               }
+               system.userlimit[m.username] = true;
+               env.authenticated = true;
+               env.username = m.username;
+               env.uuid = m.uuid;
+               return;
+            }
             api.send_error(ws, 401, 'Not Authenticated');
             return;
          }
