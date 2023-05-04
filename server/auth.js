@@ -7,6 +7,7 @@ const i_fsutil = require('./share/file');
 const system = {
    otop_passpath: process.env.BOGA_PASS_DIR,
    otop_oncecode: !!process.env.BOGA_PASS_ONCE,
+   otop_oncecode_except: process.env.BOGA_PASS_ONCE_EXCEPT ? process.env.BOGA_PASS_ONCE_EXCEPT.split(',') : [],
 };
 
 const api = {
@@ -33,7 +34,7 @@ const api = {
          if (!stat.isFile()) return reject({username, error: 'auth failed'});
          const passphrase = (await i_fsutil.readFile(filename)).toString().trim();
          if (passphrase && password === passphrase) {
-            if (system.otop_oncecode) i_fsutil.origin.unlink(filename, () => {});
+            if (system.otop_oncecode && !system.otop_oncecode_except.includes(username)) i_fsutil.origin.unlink(filename, () => {});
             resolve(keyval_setauth(username));
          } else {
             reject({username, error: 'auth failed'});
