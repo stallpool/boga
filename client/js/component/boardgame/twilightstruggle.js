@@ -774,22 +774,20 @@ function evt_mask_mousemove(evt) {
    var fn = host && host.mousemove;
    fn && fn(evt);
 }
+function show_menubox() {
+   env.stat.displayedMenubox = true;
+   env.ui.menubox.classList.remove('hidden');
+}
 function evt_menubox_show(evt) {
    if (env.stat.displayedMenubox) return;
    if (env.is_mobile) {
       var t = evt.touches[0];
       if (!env.stat.touchdrawpx) env.stat.touchdrawpx = [t.clientX, t.clientY];
       var tpx = env.stat.touchdrawpx;
-      if (tpx[0] < 30) {
-         env.stat.displayedMenubox = true;
-         env.ui.menubox.classList.remove('hidden');
-      }
+      if (tpx[0] < 30) show_menubox();
    } else {
       // mousemove
-      if (evt.clientX < 10) {
-         env.stat.displayedMenubox = true;
-         env.ui.menubox.classList.remove('hidden');
-      }
+      if (evt.clientX < 10) show_menubox();
    }
 }
 function evt_menubox_hide(evt) {
@@ -959,6 +957,7 @@ function register_events() {
       on(env.ui.menubox, 'mouseup', evt_sidebar_mouseup);
       on(env.ui.menubox, 'mouseleave', evt_sidebar_mouseup);
    }
+   on(dom('#nav_mline'), 'click', show_menubox);
    on(eventbus, 'dblclick', evt_selected_dblclick_dispatch);
    on(eventbus, 'click', evt_selected_click_dispatch);
    on(env.ui.mask, 'mouseleave', evt_mask_mouseleave);
@@ -1012,6 +1011,7 @@ function dispose() {
       off(env.ui.menubox, 'mouseup', evt_sidebar_mouseup);
       off(env.ui.menubox, 'mouseleave', evt_sidebar_mouseup);
    }
+   off(dom('#nav_mline'), 'click', show_menubox);
    off(eventbus, 'dblclick', evt_selected_dblclick_dispatch);
    off(eventbus, 'click', evt_selected_click_dispatch);
    off(env.ui.mask, 'mouseleave', evt_mask_mouseleave);
