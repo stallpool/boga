@@ -668,7 +668,6 @@
             return true;
          }
       },
-      dispose: function () {},
       makeElementBuffer: function () {
          if (!this.imageBuf) return;
          var tc, w, h, p;
