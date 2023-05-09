@@ -360,23 +360,46 @@ function remove_worldmap_infcard(cardel) {
       card: { iid: parseInt(cardel.getAttribute('iid')) }
    });
 }
+function get_card_source(cid) {
+   var one = deck.discardCards.find(function (z) { return z.id === cid; });
+   if (one) return 'd';
+   one = deck.uCards.find(function (z) { return z.id === cid; });
+   if (one) return 'u';
+   one = deck.sCards.find(function (z) { return z.id === cid; });
+   if (one) return 's';
+   one = deck.eventCards.find(function (z) { return z.id === cid; });
+   if (one) return 'e';
+   one = deck.remainCards.find(function (z) { return z.id === cid; });
+   if (one) return 'r';
+   return null;
+}
+function update_card_and_remove_virtualcard(el) {
+   update_card_hand();
+   update_card_discard();
+   update_card_event();
+   if (el.parentNode) el.parentNode.removeChild(el);
+}
 function picktohand_worldmap_actcard(cardel) {
    if (deck.side === 'N') return;
    var p = cardel.parentNode;
    if (!p) return;
    var cid = parseInt(cardel.getAttribute('cid'));
+   var src = get_card_source(cid);
+   if (!src) return update_card_and_remove_virtualcard(cardel);
    if (deck.side === 'U') {
+      if (src === 'u') return update_card_and_remove_virtualcard(cardel);
       env._client.request({
          room: env._room,
          cmd: 'twilightstruggle.act',
-         act: 'e->u',
+         act: src + '->u',
          card: { cid: cid }
       });
    } else if (deck.side === 'S') {
+      if (src === 's') return update_card_and_remove_virtualcard(cardel);
       env._client.request({
          room: env._room,
          cmd: 'twilightstruggle.act',
-         act: 'e->s',
+         act: src + '->s',
          card: { cid: cid }
       });
    }
@@ -385,10 +408,12 @@ function remove_worldmap_actcard(cardel) {
    var p = cardel.parentNode;
    if (!p) return;
    var cid = parseInt(cardel.getAttribute('cid'));
+   var src = get_card_source(cid);
+   if (src === 'd') return update_card_and_remove_virtualcard(cardel);
    env._client.request({
       room: env._room,
       cmd: 'twilightstruggle.act',
-      act: 'e->d',
+      act: src + '->d',
       card: { cid: cid }
    });
 }
