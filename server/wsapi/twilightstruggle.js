@@ -80,8 +80,6 @@ class TsDeck {
    }
 
    iadd(t, x, y) { // t = 0:us, 1:ussr
-      const item = this.deck.i.find(z => z.cid === cid);
-      if (item) return this.iupdate(item.cid, x, y, item.v);
       if (this.deck.i.length >= 100) return null;
       const obj = { iid: this.autoid++, x, y, t, v: 1 };
       this.deck.i.push(obj);
